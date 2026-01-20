@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Expense Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script async src="https://docs.opencv.org/4.5.2/opencv.js" onload="onOpenCvReady()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: white;
+            color: #333;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 3px solid #4A68B8;
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            height: 60px;
+            width: auto;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 20px;
+            color: #1a237e;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        input, select, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1a237e;
+            box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.1);
+        }
+
+        .expense-entry {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            align-items: end;
+        }
+
+        .expense-entry .form-group {
+            margin: 0;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(26, 35, 126, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .total-section {
+            background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .total-section h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .total-section .amount {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .expense-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .mileage-calc {
+            background: #e8eaf6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .mileage-calc label {
+            color: #1a237e;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .expense-entry {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .receipt-preview {
+            margin-top: 8px;
+        }
+
+        .receipt-preview img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 4px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .receipt-preview img:hover {
+            transform: scale(1.05);
+            border-color: #667eea;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+            font-size: 13px;
+        }
+
+        .receipt-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .receipt-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .receipt-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+
+        .receipt-modal.show {
+            display: flex;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #667eea;
+        }
+
+        .crop-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            overflow: auto;
+        }
+
+        .crop-modal.show {
+            display: block;
+        }
+
+        .crop-container {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .crop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .crop-header h2 {
+            color: #667eea;
+            font-size: 22px;
+        }
+
+        .crop-image-container {
+            max-width: 100%;
+            max-height: 500px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .crop-image-container img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .crop-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .crop-controls .btn {
+            padding: 10px 20px;
+            font-size: 13px;
+        }
+
+        .crop-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding-top: 15px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .btn-rotate {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-rotate:hover {
+            background: #138496;
+        }
+
+        .btn-flip {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-flip:hover {
+            background: #5a6268;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <h2 style="margin: 0; color: #4A5FA9; font-size: 28px; font-weight: 700; letter-spacing: 1px;">ORICS INDUSTRIES</h2>
+            </div>
+            <h1>Service Expense Report</h1>
+            <p>Professional Expense Documentation</p>
+        </div>
+
+        <div class="content">
+            <!-- Report Information -->
+            <div class="section">
+                <div class="section-title">Report Information</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Technician Name *</label>
+                        <input type="text" id="technicianName" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Report Number *</label>
+                        <input type="text" id="reportNumber" placeholder="12345" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Customer/Company Name *</label>
+                        <input type="text" id="companyName" placeholder="Customer Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Location *</label>
+                        <input type="text" id="serviceLocation" placeholder="New York, NY" required>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label>Service Date From *</label>
+                            <input type="date" id="serviceDateFrom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Service Date To *</label>
+                            <input type="date" id="serviceDateTo" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mileage -->
+            <div class="section">
+                <div class="section-title">🚗 Mileage (Personal Vehicle)</div>
+                <div class="mileage-calc">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Miles Driven</label>
+                            <input type="number" id="milesDriven" placeholder="0" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>IRS Rate per Mile ($)</label>
+                            <input type="number" id="mileageRate" value="0.725" step="0.001" min="0" oninput="calculateMileage(); saveMileageRate();">
+                        </div>
+                        <div class="form-group">
+                            <label>Mileage Total</label>
+                            <input type="text" id="mileageTotal" readonly style="font-weight: bold; background: white;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advances -->
+            <div class="section">
+                <div class="section-title">💵 Advances</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Cash Advance ($)</label>
+                        <input type="number" id="cashAdvance" placeholder="0.00" step="0.01" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Other Advance ($)</label>
+                        <input type="number" id="otherAdvance" placeholder="0.00" step="0.01" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Expenses -->
+            <div class="section">
+                <div class="section-title">💰 Other Expenses</div>
+                <div class="expense-list" id="expenseList"></div>
+                <button class="btn btn-secondary" onclick="addExpense()" style="margin-top: 15px;">+ Add Expense</button>
+            </div>
+
+            <!-- Total -->
+            <div class="total-section">
+                <h3>Total Expenses</h3>
+                <div class="amount" id="totalAmount">$0.00</div>
+            </div>
+
+            <!-- Actions -->
+            <div class="button-group">
+                <button class="btn btn-success" onclick="generatePDF()">📄 Export PDF</button>
+                <button class="btn btn-primary" onclick="exportToFile()">💾 Save Report File</button>
+                <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">📂 Load Report File</button>
+                <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear All</button>
+            </div>
+            
+            <!-- Developer Credit -->
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <p style="font-size: 11px; color: #999; margin: 0;">
+                    App developed by Michael Zaidman
+                </p>
+                <p style="font-size: 10px; color: #aaa; margin: 5px 0 0 0;">
+                    Have improvement ideas? Contact me!
+                </p>
+            </div>
+            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importFromFile(this)">
+        </div>
+    </div>
+
+    <!-- Receipt Modal for full-size viewing -->
+    <div class="receipt-modal" id="receiptModal" onclick="closeReceiptModal()">
+        <span class="close-modal">&times;</span>
+        <img id="modalImage" src="" alt="Receipt">
+    </div>
+
+    <!-- Crop Modal -->
+    <div class="crop-modal" id="cropModal">
+        <div class="crop-container">
+            <div class="crop-header">
+                <h2>📷 Scan Receipt</h2>
+                <button class="btn btn-secondary" onclick="closeCropModal()">Cancel</button>
+            </div>
+            
+            <div class="crop-image-container">
+                <div style="position: relative; display: inline-block;">
+                    <img id="cropImage" src="" alt="Receipt to crop" style="display: block; max-width: 100%; height: auto;">
+                    <canvas id="perspectiveCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none; display: none;"></canvas>
+                </div>
+            </div>
+
+            <div class="crop-controls">
+                <button class="btn btn-success" onclick="togglePerspectiveMode()">📐 Straighten Receipt</button>
+                <button class="btn btn-rotate" onclick="rotateCropImage(90)">↷ Rotate Right 90°</button>
+            </div>
+
+            <div id="statusMessage" style="display:none; margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 6px; color: #856404; text-align: center; font-weight: 600;"></div>
+
+            <div id="perspectiveControls" style="display:none; margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                <p style="margin: 0 0 10px 0; color: #1976d2; font-weight: 600;">📍 Drag the 4 corners to the corners of your receipt, then click Apply</p>
+                <button class="btn btn-success" onclick="applyPerspectiveCorrection()">✓ Apply & Save</button>
+                <button class="btn btn-secondary" onclick="cancelPerspectiveMode()">Cancel</button>
+            </div>
+
+            <div class="crop-actions">
+                <button class="btn btn-secondary" onclick="closeCropModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = [];
+        let receiptImages = {}; // Store receipt images by expense ID
+        let currentCropExpenseId = null; // Track which expense is being edited
+        let perspectiveMode = false; // Track if in perspective correction mode
+        let corners = []; // Store corner points for perspective correction
+        let selectedCorner = null; // Track which corner is being dragged
+        
+        // Function to convert PDF to image
+        async function pdfToImage(pdfData) {
+            try {
+                // Check if PDF.js is loaded
+                if (typeof pdfjsLib === 'undefined') {
+                    console.error('PDF.js not loaded');
+                    return null;
+                }
+                
+                const loadingTask = pdfjsLib.getDocument(pdfData);
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1); // Get first page
+                
+                const scale = 1.5; // Higher scale = better quality
+                const viewport = page.getViewport({ scale: scale });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                return canvas.toDataURL('image/jpeg', 0.85);
+            } catch (error) {
+                console.error('PDF to image conversion failed:', error);
+                return null;
+            }
+        }
+        let openCvReady = false; // Track if OpenCV is loaded
+
+        function onOpenCvReady() {
+            openCvReady = true;
+            console.log('OpenCV.js is ready');
+        }
+
+        // Set today's date as default for service dates
+        document.getElementById('serviceDateFrom').valueAsDate = new Date();
+        document.getElementById('serviceDateTo').valueAsDate = new Date();
+
+        // Initialize with one expense entry
+        addExpense();
+
+        // Load saved data on page load
+        loadSavedData();
+        loadTechnicianName();
+        loadMileageRate();
+
+        // Auto-save data whenever any input changes
+        document.addEventListener('input', debounce(saveData, 1000));
+        
+        // Save technician name separately when it changes
+        document.getElementById('technicianName').addEventListener('input', debounce(saveTechnicianName, 1000));
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function saveData() {
+            try {
+                const data = {
+                    reportNumber: document.getElementById('reportNumber').value,
+                    companyName: document.getElementById('companyName').value,
+                    serviceLocation: document.getElementById('serviceLocation').value,
+                    serviceDateFrom: document.getElementById('serviceDateFrom').value,
+                    serviceDateTo: document.getElementById('serviceDateTo').value,
+                    milesDriven: document.getElementById('milesDriven').value,
+                    mileageRate: document.getElementById('mileageRate').value,
+                    cashAdvance: document.getElementById('cashAdvance').value,
+                    otherAdvance: document.getElementById('otherAdvance').value,
+                    expenses: [],
+                    receiptImages: receiptImages
+                };
+
+                // Save all expense entries with their IDs
+                const expenseEntries = document.querySelectorAll('.expense-entry');
+                expenseEntries.forEach(entry => {
+                    const expenseId = entry.id.replace('expense-', '');
+                    const expenseData = {
+                        id: expenseId,
+                        date: entry.querySelector('.expense-date').value,
+                        category: entry.querySelector('.expense-category').value,
+                        description: entry.querySelector('.expense-description').value,
+                        amount: entry.querySelector('.expense-amount').value
+                    };
+                    data.expenses.push(expenseData);
+                });
+
+                localStorage.setItem('expenseReportData', JSON.stringify(data));
+            } catch (e) {
+                console.error('Failed to save data:', e);
+            }
+        }
+
+        function saveTechnicianName() {
+            try {
+                const techName = document.getElementById('technicianName').value;
+                localStorage.setItem('technicianName', techName);
+            } catch (e) {
+                console.error('Failed to save technician name:', e);
+            }
+        }
+
+        function saveMileageRate() {
+            try {
+                const rate = document.getElementById('mileageRate').value;
+                localStorage.setItem('mileageRate', rate);
+            } catch (e) {
+                console.error('Failed to save mileage rate:', e);
+            }
+        }
+
+        function loadTechnicianName() {
+            try {
+                const savedName = localStorage.getItem('technicianName');
+                if (savedName) {
+                    document.getElementById('technicianName').value = savedName;
+                }
+            } catch (e) {
+                console.error('Failed to load technician name:', e);
+            }
+        }
+
+        function loadMileageRate() {
+            try {
+                const savedRate = localStorage.getItem('mileageRate');
+                if (savedRate) {
+                    document.getElementById('mileageRate').value = savedRate;
+                } else {
+                    // Set default IRS rate if nothing saved
+                    document.getElementById('mileageRate').value = '0.725';
+                }
+            } catch (e) {
+                console.error('Failed to load mileage rate:', e);
+            }
+        }
+
+        function loadSavedData() {
+            try {
+                const savedData = localStorage.getItem('expenseReportData');
+                if (!savedData) return;
+
+                const data = JSON.parse(savedData);
+
+                // Restore report info (technician name loads separately and persists)
+                if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                if (data.companyName) document.getElementById('companyName').value = data.companyName;
+                if (data.serviceLocation) document.getElementById('serviceLocation').value = data.serviceLocation;
+                if (data.serviceDateFrom) document.getElementById('serviceDateFrom').value = data.serviceDateFrom;
+                if (data.serviceDateTo) document.getElementById('serviceDateTo').value = data.serviceDateTo;
+                // Backwards compatibility - if old format, set both dates
+                if (data.serviceDate && !data.serviceDateFrom) {
+                    document.getElementById('serviceDateFrom').value = data.serviceDate;
+                    document.getElementById('serviceDateTo').value = data.serviceDate;
+                }
+                if (data.milesDriven) document.getElementById('milesDriven').value = data.milesDriven;
+                if (data.mileageRate) document.getElementById('mileageRate').value = data.mileageRate;
+                if (data.cashAdvance) document.getElementById('cashAdvance').value = data.cashAdvance;
+                if (data.otherAdvance) document.getElementById('otherAdvance').value = data.otherAdvance;
+
+                // Restore receipt images
+                if (data.receiptImages) {
+                    receiptImages = data.receiptImages;
+                }
+
+                // Clear default expense entry
+                document.getElementById('expenseList').innerHTML = '';
+
+                // Restore expenses with their original IDs
+                if (data.expenses && data.expenses.length > 0) {
+                    data.expenses.forEach((expense) => {
+                        // Use the saved ID if available, otherwise generate new one
+                        const expenseId = expense.id || Date.now() + Math.random();
+                        addExpenseWithId(expenseId);
+                        
+                        const entry = document.getElementById(`expense-${expenseId}`);
+                        if (entry) {
+                            if (expense.date) entry.querySelector('.expense-date').value = expense.date;
+                            if (expense.category) entry.querySelector('.expense-category').value = expense.category;
+                            if (expense.description) entry.querySelector('.expense-description').value = expense.description;
+                            if (expense.amount) entry.querySelector('.expense-amount').value = expense.amount;
+                        }
+                    });
+
+                    // Restore receipt image previews
+                    Object.keys(receiptImages).forEach(expenseId => {
+                        const preview = document.getElementById(`preview-${expenseId}`);
+                        if (preview && receiptImages[expenseId]) {
+                            const imageData = receiptImages[expenseId];
+                            
+                            // Image preview
+                            preview.innerHTML = `<img src="${imageData}" alt="Receipt" style="cursor: pointer;">`;
+                            preview.querySelector('img').addEventListener('click', function(e) {
+                                showReceiptModal(imageData, e);
+                            });
+                            
+                            // Show both buttons
+                            const editBtn = document.getElementById(`edit-btn-${expenseId}`);
+                            const deleteBtn = document.getElementById(`delete-btn-${expenseId}`);
+                            if (editBtn) editBtn.style.display = 'inline-block';
+                            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                        }
+                    });
+                } else {
+                    addExpense();
+                }
+
+                calculateMileage();
+                calculateTotal();
+            } catch (e) {
+                console.error('Failed to load saved data:', e);
+                addExpense();
+            }
+        }
+
+        // Calculate mileage on input
+        document.getElementById('milesDriven').addEventListener('input', calculateMileage);
+        document.getElementById('mileageRate').addEventListener('input', calculateMileage);
+
+        function calculateMileage() {
+            const miles = parseFloat(document.getElementById('milesDriven').value) || 0;
+            const rate = parseFloat(document.getElementById('mileageRate').value) || 0;
+            const total = miles * rate;
+            document.getElementById('mileageTotal').value = `$${total.toFixed(2)}`;
+            calculateTotal();
+        }
+
+        function addExpense() {
+            const expenseId = Date.now();
+            addExpenseWithId(expenseId);
+        }
+
+        function addExpenseWithId(expenseId) {
+            const expenseHTML = `
+                <div class="expense-entry" id="expense-${expenseId}">
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="date" class="expense-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select class="expense-category">
+                            <option value="Hotel">Hotel</option>
+                            <option value="Meals">Meals</option>
+                            <option value="Car Rental">Car Rental</option>
+                            <option value="Airfare">Airfare</option>
+                            <option value="Gas/Fuel">Gas/Fuel</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Tolls">Tolls</option>
+                            <option value="Taxi/Uber">Taxi/Uber</option>
+                            <option value="Office Supplies">Office Supplies</option>
+                            <option value="Internet/Phone">Internet/Phone</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" class="expense-description" placeholder="Brief description">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount ($)</label>
+                        <input type="number" class="expense-amount" placeholder="0.00" step="0.01" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label>Receipt Photo</label>
+                        <div class="receipt-buttons">
+                            <button class="btn btn-secondary btn-small" onclick="triggerCamera(${expenseId}, event)">📷 Camera</button>
+                            <button class="btn btn-secondary btn-small" onclick="triggerGallery(${expenseId}, event)">🖼️ Gallery</button>
+                            <button class="btn btn-secondary btn-small" id="edit-btn-${expenseId}" style="display:none;" onclick="openCropModal(${expenseId}, event)">✏️ Edit</button>
+                            <button class="btn btn-danger btn-small" id="delete-btn-${expenseId}" style="display:none;" onclick="deleteReceipt(${expenseId}, event)">🗑️ Delete Photo</button>
+                        </div>
+                        <input type="file" id="file-camera-${expenseId}" class="expense-receipt" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
+                        <input type="file" id="file-gallery-${expenseId}" class="expense-receipt" accept="image/*" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
+                        <div class="receipt-preview" id="preview-${expenseId}"></div>
+                    </div>
+                    <div class="form-group">
+                        <label style="opacity: 0;">Action</label>
+                        <button class="btn btn-danger" onclick="removeExpense(${expenseId})">Remove Expense</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('expenseList').insertAdjacentHTML('beforeend', expenseHTML);
+            
+            // Set today's date for new expense
+            const newExpense = document.getElementById(`expense-${expenseId}`);
+            newExpense.querySelector('.expense-date').valueAsDate = new Date();
+            
+            // Scroll to show the new expense (smooth scroll into view)
+            setTimeout(() => {
+                newExpense.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+
+        function removeExpense(id) {
+            const element = document.getElementById(`expense-${id}`);
+            if (element) {
+                element.remove();
+                delete receiptImages[id]; // Remove associated receipt image
+                calculateTotal();
+            }
+        }
+
+        function handleReceiptUpload(input, expenseId) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    receiptImages[expenseId] = imageData;
+                    
+                    const preview = document.getElementById(`preview-${expenseId}`);
+                    
+                    // Image preview with click listener
+                    preview.innerHTML = `<img src="${imageData}" alt="Receipt" style="cursor: pointer;">`;
+                    
+                    // Add click listener
+                    const img = preview.querySelector('img');
+                    if (img) {
+                        img.addEventListener('click', function(e) {
+                            showReceiptModal(imageData, e);
+                        });
+                    }
+                    
+                    // Show edit and delete buttons
+                    document.getElementById(`edit-btn-${expenseId}`).style.display = 'inline-block';
+                    document.getElementById(`delete-btn-${expenseId}`).style.display = 'inline-block';
+                    
+                    // Auto-save to preserve the uploaded photo
+                    saveData();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function triggerCamera(expenseId, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById(`file-camera-${expenseId}`).click();
+        }
+
+        function triggerGallery(expenseId, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById(`file-gallery-${expenseId}`).click();
+        }
+
+        function deleteReceipt(expenseId, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            if (confirm('Delete this receipt photo?')) {
+                delete receiptImages[expenseId];
+                document.getElementById(`preview-${expenseId}`).innerHTML = '';
+                const cameraInput = document.getElementById(`file-camera-${expenseId}`);
+                const galleryInput = document.getElementById(`file-gallery-${expenseId}`);
+                if (cameraInput) cameraInput.value = '';
+                if (galleryInput) galleryInput.value = '';
+                document.getElementById(`edit-btn-${expenseId}`).style.display = 'none';
+                document.getElementById(`delete-btn-${expenseId}`).style.display = 'none';
+                
+                // Auto-save after deletion
+                saveData();
+            }
+        }
+
+        function showReceiptModal(imageSrc, event) {
+            event.stopPropagation();
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('receiptModal').classList.add('show');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.remove('show');
+            document.getElementById('modalImage').src = '';
+        }
+
+        function openCropModal(expenseId, event) {
+            event.stopPropagation();
+            
+            if (!receiptImages[expenseId]) {
+                alert('No receipt image to edit');
+                return;
+            }
+
+            currentCropExpenseId = expenseId;
+            const cropImage = document.getElementById('cropImage');
+            cropImage.src = receiptImages[expenseId];
+
+            document.getElementById('cropModal').classList.add('show');
+        }
+
+        function closeCropModal() {
+            document.getElementById('cropModal').classList.remove('show');
+            // Reset perspective mode
+            if (perspectiveMode) {
+                cancelPerspectiveMode();
+            }
+            currentCropExpenseId = null;
+        }
+
+        function rotateCropImage(degrees) {
+            const cropImage = document.getElementById('cropImage');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            img.onload = function() {
+                // Swap width and height for 90/270 degree rotations
+                if (degrees === 90 || degrees === 270) {
+                    canvas.width = img.height;
+                    canvas.height = img.width;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+                
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate(degrees * Math.PI / 180);
+                ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                
+                const rotatedImage = canvas.toDataURL('image/jpeg', 0.9);
+                cropImage.src = rotatedImage;
+                receiptImages[currentCropExpenseId] = rotatedImage;
+                
+                // Update preview
+                const preview = document.getElementById(`preview-${currentCropExpenseId}`);
+                if (preview) {
+                    preview.innerHTML = `<img src="${rotatedImage}" alt="Receipt" style="cursor: pointer;">`;
+                    preview.querySelector('img').addEventListener('click', function(e) {
+                        showReceiptModal(rotatedImage, e);
+                    });
+                }
+                
+                saveData();
+            };
+            img.src = cropImage.src;
+        }
+
+        function resetCrop() {
+            // No longer needed - removed
+        }
+
+        function zoomIn() {
+            // No longer needed - removed
+        }
+
+        function zoomOut() {
+            // No longer needed - removed
+        }
+
+        function togglePerspectiveMode() {
+            perspectiveMode = true;
+            
+            // Get the image
+            const cropImage = document.getElementById('cropImage');
+            const canvas = document.getElementById('perspectiveCanvas');
+            
+            if (!canvas) {
+                showStatus('❌ Canvas element not found', 'error');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+                showStatus('❌ Cannot get canvas context', 'error');
+                return;
+            }
+            
+            // Function to setup canvas once we have valid dimensions
+            const setupCanvas = () => {
+                // Try multiple methods to get dimensions
+                const imgRect = cropImage.getBoundingClientRect();
+                let displayWidth = Math.floor(imgRect.width);
+                let displayHeight = Math.floor(imgRect.height);
+                
+                // Fallback to other methods if getBoundingClientRect fails
+                if (displayWidth <= 0 || displayHeight <= 0) {
+                    displayWidth = cropImage.offsetWidth || cropImage.clientWidth;
+                    displayHeight = cropImage.offsetHeight || cropImage.clientHeight;
+                }
+                
+                // Last resort - use natural dimensions scaled to container
+                if (displayWidth <= 0 || displayHeight <= 0) {
+                    const container = cropImage.parentElement;
+                    const containerWidth = container.offsetWidth || 400;
+                    const ratio = cropImage.naturalHeight / cropImage.naturalWidth;
+                    displayWidth = containerWidth;
+                    displayHeight = Math.floor(containerWidth * ratio);
+                }
+                
+                if (displayWidth <= 0 || displayHeight <= 0) {
+                    showStatus('❌ Cannot determine image size', 'error');
+                    cropper.enable();
+                    return false;
+                }
+                
+                // Set canvas size to EXACTLY match the displayed image
+                canvas.width = displayWidth;
+                canvas.height = displayHeight;
+                canvas.style.width = displayWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
+                canvas.style.display = 'block';
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.position = 'absolute';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.zIndex = '10';
+                
+                // Set default corners (at image boundaries with margin)
+                setDefaultCorners(canvas);
+                
+                if (!corners || corners.length !== 4) {
+                    showStatus('❌ Failed to create corners', 'error');
+                    return false;
+                }
+                
+                // Draw the corners
+                try {
+                    drawCorners(ctx, canvas);
+                    showStatus('✓ Drag corners to document edges', 'success');
+                } catch (e) {
+                    showStatus('❌ Drawing failed: ' + e.message, 'error');
+                    return false;
+                }
+                
+                // Show perspective controls
+                document.getElementById('perspectiveControls').style.display = 'block';
+                
+                // Remove old listeners if any
+                canvas.removeEventListener('mousedown', startDraggingCorner);
+                canvas.removeEventListener('mousemove', dragCorner);
+                canvas.removeEventListener('mouseup', stopDraggingCorner);
+                canvas.removeEventListener('touchstart', handleTouchStart);
+                canvas.removeEventListener('touchmove', handleTouchMove);
+                canvas.removeEventListener('touchend', stopDraggingCorner);
+                
+                // Add event listeners for corner dragging
+                canvas.addEventListener('mousedown', startDraggingCorner);
+                canvas.addEventListener('mousemove', dragCorner);
+                canvas.addEventListener('mouseup', stopDraggingCorner);
+                canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+                canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+                canvas.addEventListener('touchend', stopDraggingCorner);
+                
+                return true;
+            };
+            
+            // Try to setup immediately
+            if (!setupCanvas()) {
+                // If immediate setup fails, wait longer and retry
+                showStatus('⏳ Loading...', 'info');
+                setTimeout(() => {
+                    if (!setupCanvas()) {
+                        // One more try after longer delay
+                        setTimeout(setupCanvas, 500);
+                    }
+                }, 200);
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'error') {
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+            } else if (type === 'success') {
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.color = '#155724';
+            } else {
+                statusDiv.style.background = '#fff3cd';
+                statusDiv.style.color = '#856404';
+            }
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function detectDocumentEdges(img, canvas, ctx) {
+            // Always start with default corners
+            setDefaultCorners(canvas);
+            
+            try {
+                // Create a temporary canvas to get image data
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.naturalWidth;
+                tempCanvas.height = img.naturalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0);
+                
+                console.log('Starting edge detection...');
+                
+                // Convert to OpenCV mat
+                let src = cv.imread(tempCanvas);
+                let gray = new cv.Mat();
+                let blurred = new cv.Mat();
+                let edged = new cv.Mat();
+                
+                // Convert to grayscale
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                
+                // Blur and edge detection
+                cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+                cv.Canny(blurred, edged, 75, 200);
+                
+                // Find contours
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+                cv.findContours(edged, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+                
+                console.log('Found', contours.size(), 'contours');
+                
+                // Find largest contour
+                let maxArea = 0;
+                let maxContourIndex = -1;
+                for (let i = 0; i < contours.size(); i++) {
+                    let area = cv.contourArea(contours.get(i));
+                    if (area > maxArea) {
+                        maxArea = area;
+                        maxContourIndex = i;
+                    }
+                }
+                
+                console.log('Largest contour index:', maxContourIndex, 'area:', maxArea);
+                
+                if (maxContourIndex >= 0 && maxArea > (img.naturalWidth * img.naturalHeight * 0.1)) {
+                    let contour = contours.get(maxContourIndex);
+                    let peri = cv.arcLength(contour, true);
+                    let approx = new cv.Mat();
+                    cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+                    
+                    console.log('Approximated contour has', approx.rows, 'points');
+                    
+                    // If we found a quadrilateral
+                    if (approx.rows === 4) {
+                        // Scale corners from natural image size to displayed canvas size
+                        const scaleX = canvas.width / img.naturalWidth;
+                        const scaleY = canvas.height / img.naturalHeight;
+                        
+                        corners = [];
+                        for (let i = 0; i < 4; i++) {
+                            let x = approx.data32S[i * 2] * scaleX;
+                            let y = approx.data32S[i * 2 + 1] * scaleY;
+                            
+                            // Ensure corners are within bounds with margin
+                            x = Math.max(15, Math.min(canvas.width - 15, x));
+                            y = Math.max(15, Math.min(canvas.height - 15, y));
+                            
+                            corners.push({ x, y });
+                        }
+                        
+                        // Order corners: top-left, top-right, bottom-right, bottom-left
+                        corners = orderCorners(corners);
+                        
+                        console.log('Detected corners:', corners);
+                        console.log('Canvas size:', canvas.width, 'x', canvas.height);
+                    } else {
+                        console.log('Not a quadrilateral, using default corners');
+                    }
+                    
+                    approx.delete();
+                } else {
+                    console.log('No suitable contour found, using default corners');
+                }
+                
+                // Clean up
+                src.delete();
+                gray.delete();
+                blurred.delete();
+                edged.delete();
+                contours.delete();
+                hierarchy.delete();
+                
+            } catch (e) {
+                console.error('Edge detection failed:', e);
+                // Corners are already set to defaults at the start
+            }
+            
+            // Always draw the corners
+            console.log('Drawing corners:', corners);
+            drawCorners(ctx, canvas);
+        }
+
+        function setDefaultCorners(canvas) {
+            const margin = 40; // Larger margin for mobile visibility
+            corners = [
+                { x: margin, y: margin }, // top-left
+                { x: canvas.width - margin, y: margin }, // top-right
+                { x: canvas.width - margin, y: canvas.height - margin }, // bottom-right
+                { x: margin, y: canvas.height - margin } // bottom-left
+            ];
+        }
+
+        function orderCorners(pts) {
+            // Calculate center point
+            const centerX = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+            const centerY = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
+            
+            // Sort by angle from center
+            pts.forEach(p => {
+                p.angle = Math.atan2(p.y - centerY, p.x - centerX);
+            });
+            
+            pts.sort((a, b) => a.angle - b.angle);
+            
+            // Find top-left (smallest angle in upper half)
+            let topLeft = 0;
+            let minY = pts[0].y;
+            pts.forEach((p, i) => {
+                if (p.y < minY) {
+                    minY = p.y;
+                    topLeft = i;
+                }
+            });
+            
+            // Rotate array so top-left is first
+            const ordered = [];
+            for (let i = 0; i < 4; i++) {
+                ordered.push(pts[(topLeft + i) % 4]);
+            }
+            
+            // Ensure correct order: top-left, top-right, bottom-right, bottom-left
+            // Check if we need to reverse (if second point is actually bottom-left)
+            if (ordered[1].y > ordered[0].y && ordered[1].x < ordered[0].x) {
+                ordered.reverse();
+                const temp = ordered[0];
+                ordered[0] = ordered[ordered.length - 1];
+                ordered[ordered.length - 1] = temp;
+            }
+            
+            return ordered;
+        }
+
+        function drawCorners(ctx, canvas) {
+            if (!corners || corners.length !== 4) {
+                return;
+            }
+            
+            // Clear everything first
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Test draw - red rectangle
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw semi-transparent black overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Clear the document area
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            ctx.lineTo(corners[1].x, corners[1].y);
+            ctx.lineTo(corners[2].x, corners[2].y);
+            ctx.lineTo(corners[3].x, corners[3].y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Draw bright green border
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            ctx.lineTo(corners[1].x, corners[1].y);
+            ctx.lineTo(corners[2].x, corners[2].y);
+            ctx.lineTo(corners[3].x, corners[3].y);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Draw LARGE corner circles for mobile
+            for (let i = 0; i < 4; i++) {
+                const corner = corners[i];
+                
+                // Large outer glow
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+                ctx.beginPath();
+                ctx.arc(corner.x, corner.y, 30, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Main bright green circle
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(corner.x, corner.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // White inner circle
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(corner.x, corner.y, 15, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Black number
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((i + 1).toString(), corner.x, corner.y);
+            }
+        }
+
+        function startDraggingCorner(e) {
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Find closest corner with larger hit area
+            let minDist = Infinity;
+            corners.forEach((corner, index) => {
+                const dist = Math.sqrt((x - corner.x) ** 2 + (y - corner.y) ** 2);
+                if (dist < 30 && dist < minDist) {
+                    minDist = dist;
+                    selectedCorner = index;
+                }
+            });
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            // Find closest corner with larger hit area for touch
+            let minDist = Infinity;
+            corners.forEach((corner, index) => {
+                const dist = Math.sqrt((x - corner.x) ** 2 + (y - corner.y) ** 2);
+                if (dist < 40 && dist < minDist) {
+                    minDist = dist;
+                    selectedCorner = index;
+                }
+            });
+        }
+
+        function dragCorner(e) {
+            if (selectedCorner === null) return;
+            
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            corners[selectedCorner] = {
+                x: Math.max(0, Math.min(canvas.width, x)),
+                y: Math.max(0, Math.min(canvas.height, y))
+            };
+            
+            const ctx = canvas.getContext('2d');
+            drawCorners(ctx, canvas);
+        }
+
+        function handleTouchMove(e) {
+            if (selectedCorner === null) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            corners[selectedCorner] = {
+                x: Math.max(0, Math.min(canvas.width, x)),
+                y: Math.max(0, Math.min(canvas.height, y))
+            };
+            
+            const ctx = canvas.getContext('2d');
+            drawCorners(ctx, canvas);
+        }
+
+        function stopDraggingCorner() {
+            selectedCorner = null;
+        }
+
+        function applyPerspectiveCorrection() {
+            if (corners.length !== 4) {
+                showStatus('❌ Need 4 corners to apply correction', 'error');
+                return;
+            }
+            
+            if (!window.cv || !cv.imread) {
+                showStatus('⚠️ Perspective correction unavailable - just using crop', 'error');
+                // Fall back to just cropping
+                setTimeout(() => {
+                    cancelPerspectiveMode();
+                }, 2000);
+                return;
+            }
+            
+            try {
+                const cropImage = document.getElementById('cropImage');
+                const canvas = document.getElementById('perspectiveCanvas');
+                
+                showStatus('⏳ Processing...', 'info');
+                
+                // Scale corners from displayed size back to natural image size
+                const scaleX = cropImage.naturalWidth / canvas.width;
+                const scaleY = cropImage.naturalHeight / canvas.height;
+                
+                const srcCorners = corners.map(c => ({
+                    x: c.x * scaleX,
+                    y: c.y * scaleY
+                }));
+                
+                // Calculate destination dimensions
+                const width = Math.max(
+                    Math.sqrt((srcCorners[1].x - srcCorners[0].x) ** 2 + (srcCorners[1].y - srcCorners[0].y) ** 2),
+                    Math.sqrt((srcCorners[2].x - srcCorners[3].x) ** 2 + (srcCorners[2].y - srcCorners[3].y) ** 2)
+                );
+                const height = Math.max(
+                    Math.sqrt((srcCorners[3].x - srcCorners[0].x) ** 2 + (srcCorners[3].y - srcCorners[0].y) ** 2),
+                    Math.sqrt((srcCorners[2].x - srcCorners[1].x) ** 2 + (srcCorners[2].y - srcCorners[1].y) ** 2)
+                );
+                
+                // Create transformation matrix
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = cropImage.naturalWidth;
+                tempCanvas.height = cropImage.naturalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(cropImage, 0, 0);
+                
+                let src = cv.imread(tempCanvas);
+                let dst = new cv.Mat();
+                
+                let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    srcCorners[0].x, srcCorners[0].y,
+                    srcCorners[1].x, srcCorners[1].y,
+                    srcCorners[2].x, srcCorners[2].y,
+                    srcCorners[3].x, srcCorners[3].y
+                ]);
+                
+                let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    0, 0,
+                    width, 0,
+                    width, height,
+                    0, height
+                ]);
+                
+                let M = cv.getPerspectiveTransform(srcTri, dstTri);
+                cv.warpPerspective(src, dst, M, new cv.Size(width, height));
+                
+                // SCAN ENHANCEMENT - Make it look like a clean scan
+                // Convert to grayscale
+                let gray = new cv.Mat();
+                cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY);
+                
+                // Apply adaptive thresholding to get clean black text on white background
+                let binary = new cv.Mat();
+                cv.adaptiveThreshold(gray, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 10);
+                
+                // Optional: slight gaussian blur to reduce noise
+                let blurred = new cv.Mat();
+                cv.GaussianBlur(binary, blurred, new cv.Size(3, 3), 0);
+                
+                // Convert back to image
+                const outputCanvas = document.createElement('canvas');
+                cv.imshow(outputCanvas, blurred);
+                const correctedImage = outputCanvas.toDataURL('image/jpeg', 0.92);
+                
+                // Update the receipt image
+                receiptImages[currentCropExpenseId] = correctedImage;
+                
+                // Update preview
+                const escapedImage = correctedImage.replace(/'/g, "\\'");
+                const preview = document.getElementById(`preview-${currentCropExpenseId}`);
+                preview.innerHTML = `<img src="${correctedImage}" alt="Receipt" onclick="showReceiptModal('${escapedImage}', event)">`;
+                
+                // IMPORTANT: Auto-save immediately to preserve the enhanced image
+                saveData();
+                
+                // Clean up
+                src.delete();
+                dst.delete();
+                gray.delete();
+                binary.delete();
+                blurred.delete();
+                srcTri.delete();
+                dstTri.delete();
+                M.delete();
+                
+                // Show success and close
+                showStatus('✓ Receipt scanned and saved!', 'success');
+                
+                setTimeout(() => {
+                    closeCropModal();
+                }, 1000);
+                
+            } catch (e) {
+                showStatus('❌ Correction failed - ' + e.message, 'error');
+                setTimeout(() => {
+                    cancelPerspectiveMode();
+                }, 2000);
+            }
+        }
+
+        function cancelPerspectiveMode() {
+            perspectiveMode = false;
+            selectedCorner = null;
+            corners = [];
+            
+            const canvas = document.getElementById('perspectiveCanvas');
+            canvas.style.display = 'none';
+            canvas.style.pointerEvents = 'none';
+            
+            document.getElementById('perspectiveControls').style.display = 'none';
+        }
+
+        function calculateTotal() {
+            let total = 0;
+
+            // Add mileage
+            const mileageTotal = document.getElementById('mileageTotal').value;
+            if (mileageTotal) {
+                total += parseFloat(mileageTotal.replace('$', '')) || 0;
+            }
+
+            // Add other expenses
+            const amounts = document.querySelectorAll('.expense-amount');
+            amounts.forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+
+            document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function clearForm() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                // Note: We do NOT clear technician name or mileage rate - they persist
+                document.getElementById('reportNumber').value = '';
+                document.getElementById('companyName').value = '';
+                document.getElementById('serviceLocation').value = '';
+                document.getElementById('serviceDateFrom').valueAsDate = new Date();
+                document.getElementById('serviceDateTo').valueAsDate = new Date();
+                document.getElementById('milesDriven').value = '';
+                document.getElementById('mileageTotal').value = '';
+                document.getElementById('cashAdvance').value = '0';
+                document.getElementById('otherAdvance').value = '0';
+                
+                // Clear all expenses and receipt images
+                document.getElementById('expenseList').innerHTML = '';
+                receiptImages = {}; // Clear all receipt images
+                
+                // Add one fresh blank expense
+                addExpense();
+                
+                // Recalculate total
+                calculateTotal();
+                
+                // Clear saved data from localStorage (but keep technician name and mileage rate)
+                localStorage.removeItem('expenseReportData');
+            }
+        }
+
+        function clearLocalStorage() {
+            if (confirm('⚠️ This will clear the auto-saved data for THIS location.\n\nThe form will remain as-is, but when you refresh or reopen, it will start fresh.\n\nAre you sure?')) {
+                localStorage.removeItem('expenseReportData');
+                updateStorageInfo(); // Update display
+                alert('✓ Auto-save cleared! Current form data is still here, but won\'t reload on next visit unless you make changes.');
+            }
+        }
+
+        function generatePDF() {
+            // Validate required fields
+            const technicianName = document.getElementById('technicianName').value;
+            const reportNumber = document.getElementById('reportNumber').value;
+            const companyName = document.getElementById('companyName').value;
+            const serviceLocation = document.getElementById('serviceLocation').value;
+            const serviceDateFrom = document.getElementById('serviceDateFrom').value;
+            const serviceDateTo = document.getElementById('serviceDateTo').value;
+
+            if (!technicianName || !reportNumber || !companyName || !serviceLocation || !serviceDateFrom || !serviceDateTo) {
+                alert('Please fill in all required report information fields (*)');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Professional header - INK EFFICIENT (minimal color)
+            // Company name at top
+            doc.setFontSize(16);
+            doc.setTextColor(74, 95, 169);
+            doc.setFont(undefined, 'bold');
+            doc.text('ORICS INDUSTRIES', 105, 10, { align: 'center' });
+            
+            // Thin line separator
+            doc.setDrawColor(74, 95, 169);
+            doc.setLineWidth(0.5);
+            doc.line(10, 15, 200, 15);
+            
+            // Report title - simple black text
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('SERVICE EXPENSE REPORT', 105, 22, { align: 'center' });
+
+            // Report Info - clean and professional
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            let yPos = 30;
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Technician:', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(technicianName, 70, yPos);
+            
+            yPos += 7;
+            doc.setFont(undefined, 'bold');
+            doc.text('Service Report Number:', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(reportNumber, 70, yPos);
+            
+            yPos += 7;
+            doc.setFont(undefined, 'bold');
+            doc.text('Customer/Company:', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(companyName, 70, yPos);
+            
+            yPos += 7;
+            doc.setFont(undefined, 'bold');
+            doc.text('Service Location:', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.text(serviceLocation, 70, yPos);
+            
+            yPos += 7;
+            doc.setFont(undefined, 'bold');
+            doc.text('Service Dates:', 20, yPos);
+            doc.setFont(undefined, 'normal');
+            const fromDate = new Date(serviceDateFrom).toLocaleDateString();
+            const toDate = new Date(serviceDateTo).toLocaleDateString();
+            const dateRange = fromDate === toDate ? fromDate : `${fromDate} - ${toDate}`;
+            doc.text(dateRange, 70, yPos);
+
+            yPos += 15;
+
+            // Mileage Section
+            const miles = parseFloat(document.getElementById('milesDriven').value) || 0;
+            const rate = parseFloat(document.getElementById('mileageRate').value) || 0;
+            const mileageTotal = miles * rate;
+
+            if (miles > 0) {
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('MILEAGE (Personal Vehicle)', 20, yPos);
+                yPos += 8;
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Miles Driven', 'Rate per Mile', 'Total']],
+                    body: [[miles.toFixed(1), `$${rate.toFixed(3)}`, `$${mileageTotal.toFixed(2)}`]],
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 35, 126] },
+                    margin: { left: 20, right: 20 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Other Expenses Section
+            const expenseData = [];
+            const expenseEntries = document.querySelectorAll('.expense-entry');
+            
+            expenseEntries.forEach(entry => {
+                const date = entry.querySelector('.expense-date').value;
+                const category = entry.querySelector('.expense-category').value;
+                const description = entry.querySelector('.expense-description').value;
+                const amount = parseFloat(entry.querySelector('.expense-amount').value) || 0;
+                
+                if (amount > 0 || description) {
+                    expenseData.push([
+                        new Date(date).toLocaleDateString(),
+                        category,
+                        description || '-',
+                        `$${amount.toFixed(2)}`
+                    ]);
+                }
+            });
+
+            if (expenseData.length > 0) {
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('OTHER EXPENSES', 20, yPos);
+                yPos += 8;
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Date', 'Category', 'Description', 'Amount']],
+                    body: expenseData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 35, 126] },
+                    margin: { left: 20, right: 20 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Advances Section
+            const cashAdvance = parseFloat(document.getElementById('cashAdvance').value) || 0;
+            const otherAdvance = parseFloat(document.getElementById('otherAdvance').value) || 0;
+            
+            if (cashAdvance > 0 || otherAdvance > 0) {
+                // Check if we need a new page
+                if (yPos > 230) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('ADVANCES', 20, yPos);
+                yPos += 8;
+
+                const advanceData = [];
+                if (cashAdvance > 0) {
+                    advanceData.push(['Cash Advance', `$${cashAdvance.toFixed(2)}`]);
+                }
+                if (otherAdvance > 0) {
+                    advanceData.push(['Other Advance', `$${otherAdvance.toFixed(2)}`]);
+                }
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Type', 'Amount']],
+                    body: advanceData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 35, 126] },
+                    margin: { left: 20, right: 20 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Total - MOVED BEFORE RECEIPT IMAGES
+            const totalAmount = document.getElementById('totalAmount').textContent;
+            
+            // Check if we need a new page for the total
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            // TOTAL - ink efficient with just a border
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.rect(20, yPos, 170, 12);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('TOTAL EXPENSES:', 25, yPos + 8);
+            doc.text(totalAmount, 185, yPos + 8, { align: 'right' });
+
+            yPos += 20;
+
+            // Add receipt images if they exist
+            const receiptIds = Object.keys(receiptImages);
+            if (receiptIds.length > 0) {
+                // Check if we need a new page
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('RECEIPT IMAGES', 20, yPos);
+                yPos += 10;
+
+                let xPos = 20;
+                let imagesInRow = 0;
+                const maxImagesPerRow = 2;
+                const maxWidth = 80;  // Maximum width per image
+                const maxHeight = 100; // Maximum height per image
+                const spacing = 10;
+                let maxHeightInRow = 0; // Track tallest image in current row
+
+                // Process receipts sequentially to handle async PDF conversions
+                for (const expenseId of receiptIds) {
+                    if (receiptImages[expenseId]) {
+                        // Get the expense details for labeling
+                        const expenseEntry = document.getElementById(`expense-${expenseId}`);
+                        if (expenseEntry) {
+                            const category = expenseEntry.querySelector('.expense-category').value;
+                            const amount = expenseEntry.querySelector('.expense-amount').value;
+                            
+                            // Check if we need a new row or page
+                            if (imagesInRow >= maxImagesPerRow) {
+                                imagesInRow = 0;
+                                xPos = 20;
+                                yPos += maxHeightInRow + spacing + 10;
+                                maxHeightInRow = 0;
+                                
+                                if (yPos > 220) {
+                                    doc.addPage();
+                                    yPos = 20;
+                                }
+                            }
+
+                            // Add label
+                            doc.setFontSize(9);
+                            doc.setFont(undefined, 'normal');
+                            doc.text(`${category} - $${amount}`, xPos, yPos);
+                            
+                            // Add image with proper aspect ratio
+                            try {
+                                const img = new Image();
+                                img.src = receiptImages[expenseId];
+                                
+                                let imgWidth = maxWidth;
+                                let imgHeight = maxHeight;
+                                
+                                // Calculate aspect ratio
+                                const aspectRatio = img.width / img.height;
+                                
+                                if (aspectRatio > 1) {
+                                    // Landscape - width is limiting
+                                    imgWidth = maxWidth;
+                                    imgHeight = maxWidth / aspectRatio;
+                                } else {
+                                    // Portrait - height is limiting
+                                    imgHeight = maxHeight;
+                                    imgWidth = maxHeight * aspectRatio;
+                                }
+                                
+                                // Add image with proper dimensions
+                                doc.addImage(receiptImages[expenseId], 'JPEG', xPos, yPos + 3, imgWidth, imgHeight);
+                                
+                                // Track max height for row spacing
+                                maxHeightInRow = Math.max(maxHeightInRow, imgHeight);
+                                
+                                xPos += maxWidth + spacing;
+                                imagesInRow++;
+                            } catch (e) {
+                                console.error('Error adding image:', e);
+                                xPos += maxWidth + spacing;
+                                imagesInRow++;
+                            }
+                        }
+                    }
+                }
+
+                yPos += maxHeightInRow + 15;
+            }
+
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setTextColor(150, 150, 150);
+                doc.setFontSize(8);
+                doc.text('ORICS INDUSTRIES - Service Report', 105, 285, { align: 'center' });
+                doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, 290, { align: 'center' });
+                doc.text(`Page ${i} of ${pageCount}`, 105, 295, { align: 'center' });
+            }
+
+            // Save PDF
+            const cleanReportNumber = reportNumber.replace(/[^a-z0-9]/gi, '_');
+            const cleanCompanyName = companyName.replace(/[^a-z0-9]/gi, '_');
+            const filename = `Orics_${cleanCompanyName}_${cleanReportNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            
+            // Don't auto-clear after PDF export - user may want to save report file too
+            alert('PDF exported successfully!');
+        }
+
+        async function exportToFile() {
+            // Validate required fields
+            const technicianName = document.getElementById('technicianName').value;
+            const reportNumber = document.getElementById('reportNumber').value;
+            const companyName = document.getElementById('companyName').value;
+            
+            if (!technicianName || !reportNumber || !companyName) {
+                alert('Please fill in Technician Name, Service Report Number, and Customer Name before saving');
+                return;
+            }
+
+            try {
+                const data = {
+                    version: '1.0',
+                    exportDate: new Date().toISOString(),
+                    technicianName: technicianName,
+                    reportNumber: reportNumber,
+                    companyName: companyName,
+                    serviceLocation: document.getElementById('serviceLocation').value,
+                    serviceDateFrom: document.getElementById('serviceDateFrom').value,
+                    serviceDateTo: document.getElementById('serviceDateTo').value,
+                    milesDriven: document.getElementById('milesDriven').value,
+                    mileageRate: document.getElementById('mileageRate').value,
+                    cashAdvance: document.getElementById('cashAdvance').value,
+                    otherAdvance: document.getElementById('otherAdvance').value,
+                    expenses: [],
+                    receiptImages: receiptImages
+                };
+
+                // Save all expense entries
+                const expenseEntries = document.querySelectorAll('.expense-entry');
+                expenseEntries.forEach(entry => {
+                    const expenseId = entry.id.replace('expense-', '');
+                    const expenseData = {
+                        id: expenseId,
+                        date: entry.querySelector('.expense-date').value,
+                        category: entry.querySelector('.expense-category').value,
+                        description: entry.querySelector('.expense-description').value,
+                        amount: entry.querySelector('.expense-amount').value
+                    };
+                    data.expenses.push(expenseData);
+                });
+
+                // Convert to JSON
+                const jsonStr = JSON.stringify(data, null, 2);
+                const cleanReportNumber = reportNumber.replace(/[^a-z0-9]/gi, '_');
+                const cleanCompanyName = companyName.replace(/[^a-z0-9]/gi, '_');
+                const suggestedName = `Orics_${cleanCompanyName}_${cleanReportNumber}_report.json`;
+                
+                // Try to use File System Access API (works on desktop Chrome/Edge)
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const fileHandle = await window.showSaveFilePicker({
+                            suggestedName: suggestedName,
+                            types: [{
+                                description: 'JSON Report Files',
+                                accept: { 'application/json': ['.json'] }
+                            }]
+                        });
+                        
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(jsonStr);
+                        await writable.close();
+                        
+                        alert('Report file saved successfully! You can load this file later to continue editing.');
+                        return;
+                    } catch (err) {
+                        // User cancelled or error occurred
+                        if (err.name !== 'AbortError') {
+                            console.error('Save file picker error:', err);
+                        }
+                        return;
+                    }
+                }
+                
+                // Fallback for mobile browsers and older browsers
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = suggestedName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('Report file saved to Downloads! You can load this file later to continue editing.');
+            } catch (e) {
+                alert('Failed to save report file: ' + e.message);
+            }
+        }
+
+        function importFromFile(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Confirm before loading (will overwrite current data)
+                    if (!confirm('Load this report? Current unsaved changes will be lost.')) {
+                        input.value = '';
+                        return;
+                    }
+                    
+                    // Clear current form
+                    document.getElementById('expenseList').innerHTML = '';
+                    receiptImages = {};
+                    
+                    // Restore report info (but NOT technician name - that persists separately)
+                    if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                    if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                    if (data.companyName) document.getElementById('companyName').value = data.companyName;
+                    if (data.serviceLocation) document.getElementById('serviceLocation').value = data.serviceLocation;
+                    if (data.serviceDateFrom) document.getElementById('serviceDateFrom').value = data.serviceDateFrom;
+                    if (data.serviceDateTo) document.getElementById('serviceDateTo').value = data.serviceDateTo;
+                    // Backwards compatibility - if old format, set both dates
+                    if (data.serviceDate && !data.serviceDateFrom) {
+                        document.getElementById('serviceDateFrom').value = data.serviceDate;
+                        document.getElementById('serviceDateTo').value = data.serviceDate;
+                    }
+                    if (data.milesDriven) document.getElementById('milesDriven').value = data.milesDriven;
+                    if (data.mileageRate) document.getElementById('mileageRate').value = data.mileageRate;
+                    if (data.cashAdvance) document.getElementById('cashAdvance').value = data.cashAdvance;
+                    if (data.otherAdvance) document.getElementById('otherAdvance').value = data.otherAdvance;
+
+                    // Restore receipt images
+                    if (data.receiptImages) {
+                        receiptImages = data.receiptImages;
+                    }
+
+                    // Restore expenses with their original IDs
+                    if (data.expenses && data.expenses.length > 0) {
+                        data.expenses.forEach((expense) => {
+                            // Use the saved ID if available, otherwise generate new one
+                            const expenseId = expense.id || Date.now() + Math.random();
+                            addExpenseWithId(expenseId);
+                            
+                            const entry = document.getElementById(`expense-${expenseId}`);
+                            if (entry) {
+                                if (expense.date) entry.querySelector('.expense-date').value = expense.date;
+                                if (expense.category) entry.querySelector('.expense-category').value = expense.category;
+                                if (expense.description) entry.querySelector('.expense-description').value = expense.description;
+                                if (expense.amount) entry.querySelector('.expense-amount').value = expense.amount;
+                            }
+                        });
+
+                        // Restore receipt image previews
+                        Object.keys(receiptImages).forEach(expenseId => {
+                            const preview = document.getElementById(`preview-${expenseId}`);
+                            if (preview && receiptImages[expenseId]) {
+                                const imageData = receiptImages[expenseId];
+                                
+                                // Image preview
+                                preview.innerHTML = `<img src="${imageData}" alt="Receipt" style="cursor: pointer;">`;
+                                preview.querySelector('img').addEventListener('click', function(e) {
+                                    showReceiptModal(imageData, e);
+                                });
+                                
+                                // Both buttons for images
+                                const editBtn = document.getElementById(`edit-btn-${expenseId}`);
+                                const deleteBtn = document.getElementById(`delete-btn-${expenseId}`);
+                                if (editBtn) editBtn.style.display = 'inline-block';
+                                if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                            }
+                        });
+                    } else {
+                        addExpense();
+                    }
+
+                    calculateMileage();
+                    calculateTotal();
+                    
+                    // Save to localStorage as well
+                    saveData();
+                    
+                    alert('Report loaded successfully!');
+                    input.value = ''; // Clear file input
+                } catch (e) {
+                    alert('Failed to load report file: ' + e.message);
+                    input.value = '';
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
