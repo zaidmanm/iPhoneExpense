@@ -1,0 +1,3133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Expense Report</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script async src="https://docs.opencv.org/4.5.2/opencv.js" onload="onOpenCvReady()"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+    <script>
+        // Configure PDF.js worker
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <style>
+        /* ── Design Tokens ─────────────────────────────────────────────── */
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+        :root {
+            --navy:       #0f1f3d;
+            --navy-mid:   #1a3260;
+            --blue:       #2563eb;
+            --blue-light: #3b82f6;
+            --blue-pale:  #eff6ff;
+            --teal:       #0891b2;
+            --green:      #16a34a;
+            --green-pale: #f0fdf4;
+            --red:        #dc2626;
+            --red-pale:   #fef2f2;
+            --amber:      #d97706;
+            --surface:    #ffffff;
+            --surface-2:  #f8fafc;
+            --surface-3:  #f1f5f9;
+            --border:     #e2e8f0;
+            --border-mid: #cbd5e1;
+            --text-1:     #0f172a;
+            --text-2:     #475569;
+            --text-3:     #94a3b8;
+            --radius-sm:  6px;
+            --radius:     10px;
+            --radius-lg:  14px;
+            --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+            --shadow:     0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-lg:  0 12px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+        }
+
+        /* ── Reset ──────────────────────────────────────────────────────── */
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ── Base ───────────────────────────────────────────────────────── */
+        body {
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--surface-3);
+            min-height: 100vh;
+            padding: 16px;
+            color: var(--text-1);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ── Shell ──────────────────────────────────────────────────────── */
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* ── Header ─────────────────────────────────────────────────────── */
+        .header {
+            background: var(--navy);
+            padding: 28px 32px 24px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--blue), var(--teal));
+        }
+
+        .logo-container { margin-bottom: 10px; }
+        .logo-container img { height: 52px; width: auto; }
+
+        .logo-container h2 {
+            font-family: 'DM Mono', monospace !important;
+            font-size: 22px !important;
+            font-weight: 500 !important;
+            color: #ffffff !important;
+            letter-spacing: 4px !important;
+            margin: 0 !important;
+        }
+
+        .header h1 {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.55);
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            margin-top: 6px;
+        }
+
+        .header p { display: none; }
+
+        /* ── Content ────────────────────────────────────────────────────── */
+        .content { padding: 24px 28px 32px; }
+
+        /* ── Section cards ──────────────────────────────────────────────── */
+        .section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .section::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 16px; bottom: 16px;
+            width: 3px;
+            background: linear-gradient(180deg, var(--blue), var(--teal));
+            border-radius: 0 3px 3px 0;
+        }
+
+        .section:last-child { border-bottom: 1px solid var(--border); }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-2);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        /* ── Form ───────────────────────────────────────────────────────── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-2);
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+
+        input, select, textarea {
+            padding: 10px 13px;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text-1);
+            background: var(--surface);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        input[readonly] {
+            background: var(--surface-2);
+            color: var(--text-2);
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 11px center;
+            padding-right: 32px;
+        }
+
+        input[type="file"] { padding: 8px; font-size: 12px; }
+
+        /* ── Mileage block ──────────────────────────────────────────────── */
+        .mileage-calc {
+            background: var(--blue-pale);
+            border: 1.5px solid #bfdbfe;
+            padding: 16px;
+            border-radius: var(--radius);
+        }
+
+        .mileage-calc label { color: var(--blue); }
+
+        /* ── Expense list ───────────────────────────────────────────────── */
+        .expense-list {
+            max-height: 420px;
+            overflow-y: auto;
+            border: 1.5px solid var(--border-mid);
+            border-radius: var(--radius);
+            padding: 10px;
+            background: var(--surface-2);
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-mid) transparent;
+        }
+
+        .expense-list:empty { display: none; }
+
+        .expense-list::-webkit-scrollbar { width: 5px; }
+        .expense-list::-webkit-scrollbar-track { background: transparent; }
+        .expense-list::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 99px; }
+
+        /* ── Expense entry ──────────────────────────────────────────────── */
+        .expense-entry {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            align-items: end;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .expense-entry:hover {
+            border-color: var(--blue-light);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .expense-entry:last-child { margin-bottom: 0; }
+        .expense-entry .form-group { margin: 0; gap: 5px; }
+
+        /* Sequence badge */
+        .expense-seq-num {
+            position: absolute;
+            top: 0; right: 0;
+            background: var(--navy);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: 'DM Mono', monospace;
+            padding: 2px 7px;
+            border-radius: 0 var(--radius-sm) 0 var(--radius-sm);
+            line-height: 1.8;
+        }
+
+        /* ── Receipt ────────────────────────────────────────────────────── */
+        .receipt-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .receipt-preview { margin-top: 6px; }
+
+        .receipt-preview img {
+            max-width: 90px;
+            max-height: 90px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .receipt-preview img:hover {
+            transform: scale(1.06);
+            box-shadow: var(--shadow);
+        }
+
+        /* ── Total ──────────────────────────────────────────────────────── */
+        .total-section {
+            background: var(--navy);
+            color: white;
+            padding: 22px 28px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+
+        .total-section h3 {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 0;
+        }
+
+        .total-section .amount {
+            font-family: 'DM Mono', monospace;
+            font-size: 32px;
+            font-weight: 500;
+            letter-spacing: -1px;
+        }
+
+        /* ── Buttons ────────────────────────────────────────────────────── */
+        .btn {
+            padding: 11px 20px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-primary {
+            background: var(--blue);
+            color: white;
+        }
+        .btn-primary:hover { background: #1d4ed8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+
+        .btn-secondary {
+            background: var(--surface-3);
+            color: var(--text-2);
+            border: 1.5px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--border); color: var(--text-1); }
+
+        .btn-danger {
+            background: var(--red-pale);
+            color: var(--red);
+            border: 1.5px solid #fecaca;
+            padding: 8px 14px;
+            font-size: 12px;
+        }
+        .btn-danger:hover { background: var(--red); color: white; border-color: var(--red); }
+
+        .btn-success {
+            background: var(--green);
+            color: white;
+        }
+        .btn-success:hover { background: #15803d; box-shadow: 0 4px 12px rgba(22,163,74,0.35); }
+
+        .btn-rotate {
+            background: #0e7490;
+            color: white;
+        }
+        .btn-rotate:hover { background: #0891b2; }
+
+        .btn-flip { background: var(--surface-3); color: var(--text-2); border: 1.5px solid var(--border); }
+        .btn-flip:hover { background: var(--border); }
+
+        .btn-warning { background: #fef3c7; color: var(--amber); border: 1.5px solid #fde68a; }
+        .btn-warning:hover { background: var(--amber); color: white; }
+
+        .btn-small { padding: 7px 11px; font-size: 11px; }
+
+        /* ── Action button grid ─────────────────────────────────────────── */
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group .btn { width: 100%; justify-content: center; text-align: center; }
+
+        /* ── Payment tracking button ────────────────────────────────────── */
+        #paymentTrackingBtn {
+            background: var(--navy);
+            color: white;
+            font-size: 15px;
+            padding: 16px;
+            border-radius: var(--radius);
+            transition: all 0.2s;
+            letter-spacing: 0.2px;
+        }
+
+        #paymentTrackingBtn:hover {
+            background: var(--navy-mid);
+            box-shadow: 0 6px 18px rgba(15,31,61,0.35);
+            transform: translateY(-1px);
+        }
+
+        #paymentTrackingBtn.all-paid { background: var(--green); }
+        #paymentTrackingBtn.all-paid:hover { background: #15803d; box-shadow: 0 6px 18px rgba(22,163,74,0.35); }
+
+        /* ── Receipt full-screen modal ───────────────────────────────────── */
+        .receipt-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            justify-content: center;
+            align-items: center;
+        }
+        .receipt-modal.show { display: flex; }
+        .receipt-modal img { max-width: 92%; max-height: 92%; border-radius: var(--radius); }
+
+        .close-modal {
+            position: absolute;
+            top: 18px; right: 28px;
+            color: rgba(255,255,255,0.7);
+            font-size: 36px;
+            font-weight: 300;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+        .close-modal:hover { color: white; }
+
+        /* ── Crop modal ─────────────────────────────────────────────────── */
+        .crop-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            overflow: auto;
+        }
+        .crop-modal.show { display: block; }
+
+        .crop-container {
+            max-width: 860px;
+            margin: 24px auto;
+            padding: 24px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .crop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .crop-header h2 { color: var(--navy); font-size: 18px; font-weight: 700; }
+
+        .crop-image-container {
+            max-width: 100%;
+            max-height: 500px;
+            margin-bottom: 18px;
+            background: var(--surface-3);
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .crop-image-container img { max-width: 100%; display: block; }
+
+        .crop-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .crop-controls .btn { padding: 10px 18px; font-size: 13px; }
+
+        .crop-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── Payment tracking modal ──────────────────────────────────────── */
+        .payment-tracking-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            overflow: auto;
+        }
+        .payment-tracking-modal.show { display: block; }
+
+        .payment-container {
+            max-width: 720px;
+            margin: 32px auto 24px;
+            padding: 28px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            max-height: 82vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .payment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 0;
+        }
+
+        .payment-header h2 {
+            color: var(--navy);
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .payment-list { margin-top: 16px; }
+
+        .payment-item {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            margin-bottom: 8px;
+            background: var(--surface-2);
+            border-radius: var(--radius);
+            border-left: 3px solid var(--red);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--red);
+            transition: box-shadow 0.15s;
+        }
+
+        .payment-item:hover { box-shadow: var(--shadow-sm); }
+
+        .payment-item.paid {
+            border-left-color: var(--green);
+            background: var(--green-pale);
+            border-color: #bbf7d0;
+            border-left-color: var(--green);
+        }
+
+        .payment-customer-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-1);
+        }
+
+        .payment-details-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .payment-info-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex: 1;
+            flex-wrap: wrap;
+        }
+
+        .payment-date {
+            font-weight: 500;
+            color: var(--text-2);
+            font-size: 12px;
+        }
+
+        .payment-report-num {
+            font-size: 12px;
+            color: var(--text-3);
+            font-family: 'DM Mono', monospace;
+        }
+
+        .payment-amount {
+            font-weight: 700;
+            color: var(--blue);
+            font-size: 15px;
+            font-family: 'DM Mono', monospace;
+        }
+
+        .payment-checkbox {
+            width: 22px; height: 22px;
+            cursor: pointer;
+            accent-color: var(--green);
+        }
+
+        .payment-summary {
+            margin-bottom: 14px;
+            padding: 18px 22px;
+            background: var(--navy);
+            color: white;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .payment-empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--text-3);
+            font-size: 15px;
+        }
+
+        .payment-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 8px 10px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            border-left: 1px solid #e0e0e0;
+            min-width: 54px;
+            transition: background 0.15s;
+            flex: 0 0 auto;
+        }
+        .payment-action-btn:hover { background: rgba(0,0,0,0.05); }
+        .payment-action-btn span {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-3);
+        }
+        .payment-action-btn svg { display: block; }
+        .payment-check-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px;
+            cursor: pointer;
+            border-left: 1px solid #e0e0e0;
+            flex: 0 0 auto;
+            background: transparent;
+            transition: background 0.15s;
+        }
+        .payment-check-btn:hover { background: rgba(0,0,0,0.05); }
+
+        /* ── Custom dialog ───────────────────────────────────────────────── */
+        .custom-dialog-overlay {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            align-items: center;
+            justify-content: center;
+        }
+        .custom-dialog-overlay.show { display: flex; }
+
+        .custom-dialog {
+            background: var(--surface);
+            padding: 28px 30px;
+            border-radius: var(--radius-lg);
+            max-width: 380px;
+            width: 92%;
+            box-shadow: var(--shadow-lg);
+            border-top: 3px solid var(--blue);
+        }
+
+        .custom-dialog-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 12px;
+        }
+
+        .custom-dialog-message {
+            font-size: 14px;
+            color: var(--text-2);
+            line-height: 1.6;
+            margin-bottom: 22px;
+            white-space: pre-line;
+        }
+
+        .custom-dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        /* ── Customer DB dropdown ────────────────────────────────────────── */
+        .cdb-option {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            transition: background 0.12s;
+        }
+        .cdb-option:last-child { border-bottom: none; }
+        .cdb-option:hover { background: var(--blue-pale); }
+
+        /* ── Litepicker ──────────────────────────────────────────────────── */
+        .litepicker .container__footer {
+            text-align: center;
+            padding: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .litepicker .container__footer .preview-date-range { display: none; }
+        .litepicker .container__footer button.apply-button {
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 9px 24px;
+            font-weight: 600;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            width: 100%;
+        }
+        .litepicker .container__footer button.apply-button:hover { background: #1d4ed8; }
+        .litepicker .container__days .day-item.is-start-date,
+        .litepicker .container__days .day-item.is-end-date { background-color: var(--navy) !important; }
+        .litepicker .container__days .day-item.is-in-range {
+            background-color: var(--blue-pale) !important;
+            color: var(--blue) !important;
+        }
+
+        #serviceDateRange {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'%3E%3C/rect%3E%3Cline x1='16' y1='2' x2='16' y2='6'%3E%3C/line%3E%3Cline x1='8' y1='2' x2='8' y2='6'%3E%3C/line%3E%3Cline x1='3' y1='10' x2='21' y2='10'%3E%3C/line%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 36px;
+        }
+
+        /* ── Developer credit ────────────────────────────────────────────── */
+        .dev-credit { text-align: center; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border); }
+        .dev-credit p { font-size: 11px; color: var(--text-3); margin: 0; }
+        .dev-credit p + p { margin-top: 3px; }
+
+        /* ── Responsive ──────────────────────────────────────────────────── */
+        @media (max-width: 640px) {
+            body { padding: 0; }
+            .container { border-radius: 0; min-height: 100vh; }
+            .content { padding: 16px; }
+            .section { padding: 16px 18px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .expense-entry { grid-template-columns: 1fr; }
+            .button-group { grid-template-columns: 1fr 1fr; }
+            .total-section { flex-direction: column; gap: 6px; text-align: center; }
+            .total-section .amount { font-size: 26px; }
+        }
+
+        /* ── Misc ────────────────────────────────────────────────────────── */
+        .expense-item { display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <h2 style="margin: 0; color: #4A5FA9; font-size: 28px; font-weight: 700; letter-spacing: 1px;">ORICS INDUSTRIES</h2>
+            </div>
+            <h1>Service Expense Report</h1>
+            <p>Professional Expense Documentation</p>
+        </div>
+
+        <div class="content">
+            <!-- Report Information -->
+            <div class="section">
+                <div class="section-title">Report Information</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Technician Name *</label>
+                        <input type="text" id="technicianName" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Report Number *</label>
+                        <input type="text" id="reportNumber" placeholder="12345" required>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label>Customer/Company Name *</label>
+                        <input type="text" id="companyName" placeholder="Customer Name" required
+                               oninput="onCompanyInput()" onblur="hideCustomerDropdown()" autocomplete="off">
+                        <div id="customerDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:2px solid #c5cae9; border-top:none; border-radius:0 0 8px 8px; z-index:500; max-height:180px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.12);"></div>
+                    </div>
+                    <div class="form-group" style="position: relative;">
+                        <label>Machine Serial Number</label>
+                        <input type="text" id="machineSerial" placeholder="e.g. SN-12345-AB" autocomplete="off"
+                               oninput="onSerialInput()" onblur="hideSerialDropdown()">
+                        <div id="serialDropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:2px solid #c5cae9; border-top:none; border-radius:0 0 8px 8px; z-index:500; max-height:150px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.12);"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Location *</label>
+                        <input type="text" id="serviceLocation" placeholder="New York, NY" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Service Date(s) *</label>
+                        <input type="text" id="serviceDateRange" placeholder="Select date or range" readonly
+                               style="cursor: pointer; background: white;"
+                               required>
+                        <input type="hidden" id="serviceDateFrom">
+                        <input type="hidden" id="serviceDateTo">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mileage -->
+            <div class="section">
+                <div class="section-title">🚗 Mileage (Personal Vehicle)</div>
+                <div class="mileage-calc">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Miles Driven</label>
+                            <input type="number" id="milesDriven" placeholder="0" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>IRS Rate per Mile ($)</label>
+                            <input type="number" id="mileageRate" value="0.725" step="0.001" min="0" oninput="calculateMileage(); saveMileageRate();">
+                        </div>
+                        <div class="form-group">
+                            <label>Mileage Total</label>
+                            <input type="text" id="mileageTotal" readonly style="font-weight: bold; background: white;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advances -->
+            <div class="section">
+                <div class="section-title">💵 Advances</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Cash Advance ($)</label>
+                        <input type="number" id="cashAdvance" placeholder="0.00" step="0.01" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Other Advance ($)</label>
+                        <input type="number" id="otherAdvance" placeholder="0.00" step="0.01" min="0" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Expenses -->
+            <div class="section">
+                <div class="section-title">💰 Other Expenses</div>
+                <div class="expense-list" id="expenseList"></div>
+                <button class="btn btn-secondary" onclick="addExpense()" style="margin-top: 15px;">+ Add Expense</button>
+            </div>
+
+            <!-- Total -->
+            <div class="total-section">
+                <h3>Total Expenses</h3>
+                <div class="amount" id="totalAmount">$0.00</div>
+            </div>
+
+            <!-- Actions -->
+            <div class="button-group">
+                <button class="btn btn-success" onclick="generatePDF()">📄 Export PDF</button>
+                <button class="btn btn-primary" onclick="exportToFile()">💾 Save Report File</button>
+                <button class="btn btn-primary" onclick="openLoadReportModal()">📂 Load Report File</button>
+                <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear All</button>
+            </div>
+            
+            <div style="margin-top: 12px;">
+                <button class="btn" id="paymentTrackingBtn" onclick="openPaymentTracking()" style="width: 100%; font-size: 16px; padding: 15px;">
+                    💰 Payment Tracking: <span id="paymentTrackingAmount">$0.00 Owed</span>
+                </button>
+            </div>
+            
+            <!-- Developer Credit -->
+            <div class="dev-credit">
+                <p style="font-size: 11px; color: #999; margin: 0;">
+                    App developed by Michael Zaidman
+                </p>
+                <p style="font-size: 10px; color: #aaa; margin: 5px 0 0 0;">
+                    Have improvement ideas? Contact me!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal for full-size viewing -->
+    <div class="receipt-modal" id="receiptModal" onclick="closeReceiptModal()">
+        <span class="close-modal">&times;</span>
+        <img id="modalImage" src="" alt="Receipt">
+    </div>
+
+    <!-- Crop Modal -->
+    <div class="crop-modal" id="cropModal">
+        <div class="crop-container">
+            <div class="crop-header">
+                <h2>📷 Scan Receipt</h2>
+                <button class="btn btn-secondary" onclick="closeCropModal()">Cancel</button>
+            </div>
+            
+            <div class="crop-image-container">
+                <div style="position: relative; display: inline-block;">
+                    <img id="cropImage" src="" alt="Receipt to crop" style="display: block; max-width: 100%; height: auto;">
+                    <canvas id="perspectiveCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none; display: none;"></canvas>
+                </div>
+            </div>
+
+            <div id="cropControls" class="crop-controls">
+                <button class="btn btn-success" onclick="togglePerspectiveMode()">📐 Straighten Receipt</button>
+                <button class="btn btn-rotate" onclick="rotateCropImage(90)">↷ Rotate Right 90°</button>
+            </div>
+
+            <div id="statusMessage" style="display:none; margin-top: 10px; padding: 10px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; color: #92400e; text-align: center; font-weight: 600; font-size: 13px;"></div>
+
+            <div id="perspectiveControls" style="display:none; margin-top: 15px; padding: 16px; background: var(--blue-pale); border: 1px solid #bfdbfe; border-radius: 10px; text-align: center;">
+                <p style="margin: 0 0 15px 0; color: var(--blue); font-weight: 600; font-size: 13px;">📍 Drag the 4 corners to the corners of your receipt, then click Apply & Save</p>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                    <button class="btn btn-success" style="width: 200px;" onclick="applyPerspectiveCorrection()">✓ Apply & Save</button>
+                    <button class="btn btn-secondary" style="width: 200px;" onclick="cancelPerspectiveMode()">Cancel</button>
+                </div>
+            </div>
+
+            <div id="cropActions" class="crop-actions">
+                <button class="btn btn-secondary" onclick="closeCropModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Report Modal -->
+    <div class="payment-tracking-modal" id="loadReportModal">
+        <div class="payment-container">
+            <div class="payment-header">
+                <h2>📂 Load Report</h2>
+                <button class="btn btn-secondary" onclick="closeLoadReportModal()">Close</button>
+            </div>
+            <div id="loadReportList" style="margin-top:4px;">
+                <div class="payment-empty">No saved reports found</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Tracking Modal -->
+    <div class="payment-tracking-modal" id="paymentModal">
+        <div class="payment-container">
+            <div class="payment-header">
+                <h2>💰 Payment Tracking</h2>
+                <button class="btn btn-secondary" onclick="closePaymentTracking()">Close</button>
+            </div>
+
+            <div class="payment-summary" style="margin-bottom:14px; margin-top:0;">
+                <span>Total Outstanding:</span>
+                <span id="paymentTotalOwed">$0.00</span>
+            </div>
+            
+            <div class="payment-list" id="paymentList">
+                <div class="payment-empty">No reports submitted yet</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Dialog -->
+    <div class="custom-dialog-overlay" id="customDialog" onclick="if(event.target === this) closeCustomDialog()">
+        <div class="custom-dialog">
+            <div class="custom-dialog-title" id="dialogTitle">Notice</div>
+            <div class="custom-dialog-message" id="dialogMessage"></div>
+            <div class="custom-dialog-buttons" id="dialogButtons">
+                <button class="btn btn-primary" onclick="closeCustomDialog()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Custom Dialog Functions
+        let dialogCallback = null;
+        let dialogCancelCallback = null;
+
+        // ── Customer Database ──────────────────────────────────────────────────────
+        // Storage key: 'customerDB'
+        // Structure: { "Company Name": { location: "City, ST", serials: ["SN1","SN2"] }, ... }
+
+        function getCustomerDB() {
+            try {
+                return JSON.parse(localStorage.getItem('customerDB') || '{}');
+            } catch(e) { return {}; }
+        }
+
+        function saveCustomerDB(db) {
+            try { localStorage.setItem('customerDB', JSON.stringify(db)); } catch(e) {}
+        }
+
+        // Called when a PDF is exported — persist company + location + serial into the DB
+        function updateCustomerDB() {
+            const name = document.getElementById('companyName').value.trim();
+            const location = document.getElementById('serviceLocation').value.trim();
+            const serial = document.getElementById('machineSerial').value.trim();
+            if (!name) return;
+
+            const db = getCustomerDB();
+            if (!db[name]) db[name] = { location: '', serials: [] };
+
+            if (location) db[name].location = location;
+
+            if (serial && !db[name].serials.includes(serial)) {
+                db[name].serials.push(serial);
+            }
+
+            saveCustomerDB(db);
+        }
+
+        // ── Company autocomplete ───────────────────────────────────────────────────
+        function onCompanyInput() {
+            const val = document.getElementById('companyName').value.trim().toLowerCase();
+            const dropdown = document.getElementById('customerDropdown');
+            if (!val) { dropdown.style.display = 'none'; return; }
+
+            const db = getCustomerDB();
+            const matches = Object.keys(db).filter(name => name.toLowerCase().includes(val));
+
+            if (matches.length === 0) { dropdown.style.display = 'none'; return; }
+
+            dropdown.innerHTML = matches.map(name =>
+                `<div class="cdb-option" onmousedown="selectCustomer('${name.replace(/'/g, "\'")}')">
+                    <span style="font-weight:600;">${name}</span>
+                    <span style="font-size:11px; color:#888; margin-left:8px;">${db[name].location || ''}</span>
+                </div>`
+            ).join('');
+            dropdown.style.display = 'block';
+        }
+
+        function selectCustomer(name) {
+            const db = getCustomerDB();
+            document.getElementById('companyName').value = name;
+            document.getElementById('customerDropdown').style.display = 'none';
+
+            if (db[name]) {
+                if (db[name].location) {
+                    document.getElementById('serviceLocation').value = db[name].location;
+                }
+                const serials = db[name].serials || [];
+                if (serials.length === 1) {
+                    document.getElementById('machineSerial').value = serials[0];
+                    document.getElementById('serialDropdown').style.display = 'none';
+                } else if (serials.length > 1) {
+                    document.getElementById('machineSerial').value = '';
+                    showSerialOptions(serials);
+                } else {
+                    document.getElementById('machineSerial').value = '';
+                }
+            }
+            saveData();
+        }
+
+        function hideCustomerDropdown() {
+            setTimeout(() => {
+                document.getElementById('customerDropdown').style.display = 'none';
+            }, 150);
+        }
+
+        // ── Serial number autocomplete ─────────────────────────────────────────────
+        function onSerialInput() {
+            const company = document.getElementById('companyName').value.trim();
+            const val = document.getElementById('machineSerial').value.trim().toLowerCase();
+            const db = getCustomerDB();
+            if (!company || !db[company]) { return; }
+
+            const serials = (db[company].serials || []).filter(s => s.toLowerCase().includes(val));
+            if (serials.length === 0) { document.getElementById('serialDropdown').style.display = 'none'; return; }
+            showSerialOptions(serials);
+        }
+
+        function showSerialOptions(serials) {
+            const dropdown = document.getElementById('serialDropdown');
+            dropdown.innerHTML = serials.map(s =>
+                `<div class="cdb-option" onmousedown="selectSerial('${s.replace(/'/g, "\'")}')">
+                    <span>${s}</span>
+                </div>`
+            ).join('');
+            dropdown.style.display = 'block';
+        }
+
+        function selectSerial(serial) {
+            document.getElementById('machineSerial').value = serial;
+            document.getElementById('serialDropdown').style.display = 'none';
+            saveData();
+        }
+
+        function hideSerialDropdown() {
+            setTimeout(() => {
+                document.getElementById('serialDropdown').style.display = 'none';
+            }, 150);
+        }
+        // ───────────────────────────────────────────────────────────────────────────
+
+
+
+        function showDialog(title, message) {
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogMessage').textContent = message;
+            document.getElementById('dialogButtons').innerHTML = '<button class="btn btn-primary" onclick="closeCustomDialog()">OK</button>';
+            document.getElementById('customDialog').classList.add('show');
+        }
+
+        function showConfirm(title, message, onConfirm, onCancel) {
+            document.getElementById('dialogTitle').textContent = title;
+            document.getElementById('dialogMessage').textContent = message;
+            document.getElementById('dialogButtons').innerHTML = `
+                <button class="btn btn-secondary" onclick="cancelDialog()">Cancel</button>
+                <button class="btn btn-primary" onclick="confirmDialog()">Yes</button>
+            `;
+            dialogCallback = onConfirm;
+            dialogCancelCallback = onCancel || null;
+            document.getElementById('customDialog').classList.add('show');
+        }
+
+        function confirmDialog() {
+            const cb = dialogCallback;
+            closeCustomDialog();
+            if (cb) cb();
+        }
+
+        function cancelDialog() {
+            closeCustomDialog();
+            if (dialogCancelCallback) {
+                dialogCancelCallback();
+                dialogCancelCallback = null;
+            }
+        }
+
+        function closeCustomDialog() {
+            document.getElementById('customDialog').classList.remove('show');
+            dialogCallback = null;
+            dialogCancelCallback = null;
+        }
+
+        let expenses = [];
+        let receiptImages = {}; // Store receipt images by expense ID
+        let datePicker = null;
+        let currentCropExpenseId = null; // Track which expense is being edited
+        let perspectiveMode = false; // Track if in perspective correction mode
+        let corners = []; // Store corner points for perspective correction
+        let selectedCorner = null; // Track which corner is being dragged
+        let submittedReports = []; // Store submitted reports for payment tracking
+        
+        // Function to convert PDF to image
+        async function pdfToImage(pdfData) {
+            try {
+                // Check if PDF.js is loaded
+                if (typeof pdfjsLib === 'undefined') {
+                    console.error('PDF.js not loaded');
+                    return null;
+                }
+                
+                const loadingTask = pdfjsLib.getDocument(pdfData);
+                const pdf = await loadingTask.promise;
+                const page = await pdf.getPage(1); // Get first page
+                
+                const scale = 1.5; // Higher scale = better quality
+                const viewport = page.getViewport({ scale: scale });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                return canvas.toDataURL('image/jpeg', 0.85);
+            } catch (error) {
+                console.error('PDF to image conversion failed:', error);
+                return null;
+            }
+        }
+        let openCvReady = false; // Track if OpenCV is loaded
+
+        function onOpenCvReady() {
+            openCvReady = true;
+            console.log('OpenCV.js is ready');
+        }
+
+        // Initialize with one expense entry
+        addExpense();
+
+        // Load saved data on page load (initDatePicker called inside after restoring dates)
+        loadSavedData();
+        loadTechnicianName();
+        loadMileageRate();
+        loadSubmittedReports();
+
+        // Auto-save data whenever any input changes
+        document.addEventListener('input', debounce(saveData, 1000));
+        
+        // Save technician name separately when it changes
+        document.getElementById('technicianName').addEventListener('input', debounce(saveTechnicianName, 1000));
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function saveData() {
+            try {
+                const data = {
+                    reportNumber: document.getElementById('reportNumber').value,
+                    companyName: document.getElementById('companyName').value,
+                    machineSerial: document.getElementById('machineSerial').value,
+                    serviceLocation: document.getElementById('serviceLocation').value,
+                    serviceDateFrom: document.getElementById('serviceDateFrom').value,
+                    serviceDateTo: document.getElementById('serviceDateTo').value,
+                    milesDriven: document.getElementById('milesDriven').value,
+                    mileageRate: document.getElementById('mileageRate').value,
+                    cashAdvance: document.getElementById('cashAdvance').value,
+                    otherAdvance: document.getElementById('otherAdvance').value,
+                    expenses: [],
+                    receiptImages: receiptImages
+                };
+
+                // Save all expense entries with their IDs
+                const expenseEntries = document.querySelectorAll('.expense-entry');
+                expenseEntries.forEach(entry => {
+                    const expenseId = entry.id.replace('expense-', '');
+                    const expenseData = {
+                        id: expenseId,
+                        date: entry.querySelector('.expense-date').value,
+                        category: entry.querySelector('.expense-category').value,
+                        description: entry.querySelector('.expense-description').value,
+                        amount: entry.querySelector('.expense-amount').value
+                    };
+                    data.expenses.push(expenseData);
+                });
+
+                localStorage.setItem('expenseReportData', JSON.stringify(data));
+            } catch (e) {
+                console.error('Failed to save data:', e);
+            }
+        }
+
+        function saveTechnicianName() {
+            try {
+                const techName = document.getElementById('technicianName').value;
+                localStorage.setItem('technicianName', techName);
+            } catch (e) {
+                console.error('Failed to save technician name:', e);
+            }
+        }
+
+        function saveMileageRate() {
+            try {
+                const rate = document.getElementById('mileageRate').value;
+                localStorage.setItem('mileageRate', rate);
+            } catch (e) {
+                console.error('Failed to save mileage rate:', e);
+            }
+        }
+
+        function loadTechnicianName() {
+            try {
+                const savedName = localStorage.getItem('technicianName');
+                if (savedName) {
+                    document.getElementById('technicianName').value = savedName;
+                }
+            } catch (e) {
+                console.error('Failed to load technician name:', e);
+            }
+        }
+
+        function loadMileageRate() {
+            try {
+                const savedRate = localStorage.getItem('mileageRate');
+                if (savedRate) {
+                    document.getElementById('mileageRate').value = savedRate;
+                } else {
+                    // Set default IRS rate if nothing saved
+                    document.getElementById('mileageRate').value = '0.725';
+                }
+            } catch (e) {
+                console.error('Failed to load mileage rate:', e);
+            }
+        }
+
+        function loadSavedData() {
+            try {
+                const savedData = localStorage.getItem('expenseReportData');
+                if (!savedData) {
+                    // No saved data - init picker defaulting to today
+                    const today = new Date();
+                    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                    const t = fmt(today);
+                    document.getElementById('serviceDateFrom').value = t;
+                    document.getElementById('serviceDateTo').value = t;
+                    initDatePicker(t, t);
+                    return;
+                }
+
+                const data = JSON.parse(savedData);
+
+                // Restore report info (technician name loads separately and persists)
+                if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                if (data.companyName) document.getElementById('companyName').value = data.companyName;
+                if (data.machineSerial) document.getElementById('machineSerial').value = data.machineSerial;
+                if (data.serviceLocation) document.getElementById('serviceLocation').value = data.serviceLocation;
+                if (data.serviceDateFrom) document.getElementById('serviceDateFrom').value = data.serviceDateFrom;
+                if (data.serviceDateTo) document.getElementById('serviceDateTo').value = data.serviceDateTo;
+                // Backwards compatibility - if old format, set both dates
+                if (data.serviceDate && !data.serviceDateFrom) {
+                    document.getElementById('serviceDateFrom').value = data.serviceDate;
+                    document.getElementById('serviceDateTo').value = data.serviceDate;
+                }
+                // Init picker with restored dates
+                const df = document.getElementById('serviceDateFrom').value;
+                const dt = document.getElementById('serviceDateTo').value;
+                initDatePicker(df || null, dt || null);
+                if (data.milesDriven) document.getElementById('milesDriven').value = data.milesDriven;
+                if (data.mileageRate) document.getElementById('mileageRate').value = data.mileageRate;
+                if (data.cashAdvance) document.getElementById('cashAdvance').value = data.cashAdvance;
+                if (data.otherAdvance) document.getElementById('otherAdvance').value = data.otherAdvance;
+
+                // Restore receipt images
+                if (data.receiptImages) {
+                    receiptImages = data.receiptImages;
+                }
+
+                // Clear default expense entry
+                document.getElementById('expenseList').innerHTML = '';
+
+                // Restore expenses with their original IDs
+                if (data.expenses && data.expenses.length > 0) {
+                    data.expenses.forEach((expense) => {
+                        // Use the saved ID if available, otherwise generate new one
+                        const expenseId = expense.id || Date.now() + Math.random();
+                        addExpenseWithId(expenseId);
+                        
+                        const entry = document.getElementById(`expense-${expenseId}`);
+                        if (entry) {
+                            if (expense.date) entry.querySelector('.expense-date').value = expense.date;
+                            if (expense.category) entry.querySelector('.expense-category').value = expense.category;
+                            if (expense.description) entry.querySelector('.expense-description').value = expense.description;
+                            if (expense.amount) entry.querySelector('.expense-amount').value = expense.amount;
+                        }
+                    });
+
+                    // Restore receipt image previews
+                    Object.keys(receiptImages).forEach(expenseId => {
+                        const preview = document.getElementById(`preview-${expenseId}`);
+                        if (preview && receiptImages[expenseId]) {
+                            const imageData = receiptImages[expenseId];
+                            
+                            // Image preview
+                            preview.innerHTML = `<img src="${imageData}" alt="Receipt" style="cursor: pointer;">`;
+                            preview.querySelector('img').addEventListener('click', function(e) {
+                                showReceiptModal(imageData, e);
+                            });
+                            
+                            // Show both buttons
+                            const editBtn = document.getElementById(`edit-btn-${expenseId}`);
+                            const deleteBtn = document.getElementById(`delete-btn-${expenseId}`);
+                            if (editBtn) editBtn.style.display = 'inline-block';
+                            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                        }
+                    });
+                } else {
+                    addExpense();
+                }
+
+                calculateMileage();
+                calculateTotal();
+            } catch (e) {
+                console.error('Failed to load saved data:', e);
+                addExpense();
+            }
+        }
+
+        function initDatePicker(startVal, endVal) {
+            if (datePicker) datePicker.destroy();
+
+            datePicker = new Litepicker({
+                element: document.getElementById('serviceDateRange'),
+                singleMode: false,
+                allowRepick: true,
+                numberOfMonths: 1,
+                numberOfColumns: 1,
+                format: 'MMM D, YYYY',
+                autoApply: false,
+                resetButton: false,
+                setup: (picker) => {
+                    picker.on('button:apply', (start, end) => {
+                        const fmt = d => {
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth()+1).padStart(2,'0');
+                            const day = String(d.getDate()).padStart(2,'0');
+                            return `${y}-${m}-${day}`;
+                        };
+                        const s = start.toJSDate ? start.toJSDate() : new Date(start);
+                        const e = end.toJSDate ? end.toJSDate() : new Date(end);
+                        document.getElementById('serviceDateFrom').value = fmt(s);
+                        document.getElementById('serviceDateTo').value = fmt(e);
+                        saveData();
+                    });
+                }
+            });
+
+            // Restore saved values into picker display if provided
+            if (startVal && endVal) {
+                try {
+                    // parse YYYY-MM-DD safely
+                    const [sy,sm,sd] = startVal.split('-').map(Number);
+                    const [ey,em,ed] = endVal.split('-').map(Number);
+                    const s = new Date(sy, sm-1, sd);
+                    const e = new Date(ey, em-1, ed);
+                    datePicker.setDateRange(s, e);
+                } catch(err) {}
+            }
+        }
+
+        // Calculate mileage on input
+        document.getElementById('milesDriven').addEventListener('input', calculateMileage);
+        document.getElementById('mileageRate').addEventListener('input', calculateMileage);
+
+        function calculateMileage() {
+            const miles = parseFloat(document.getElementById('milesDriven').value) || 0;
+            const rate = parseFloat(document.getElementById('mileageRate').value) || 0;
+            const total = miles * rate;
+            document.getElementById('mileageTotal').value = `$${total.toFixed(2)}`;
+            calculateTotal();
+        }
+
+        function resequenceExpenses() {
+            const entries = document.querySelectorAll('.expense-entry');
+            entries.forEach((entry, index) => {
+                const badge = entry.querySelector('.expense-seq-num');
+                if (badge) badge.textContent = index + 1;
+            });
+        }
+
+        function addExpense() {
+            const expenseId = Date.now();
+            addExpenseWithId(expenseId);
+        }
+
+        function addExpenseWithId(expenseId) {
+            const expenseHTML = `
+                <div class="expense-entry" id="expense-${expenseId}">
+                    <div class="form-group" style="position: relative;">
+                        <label>Date</label>
+                        <input type="date" class="expense-date" required>
+                        <span class="expense-seq-num" style="position: absolute; top: 0; right: 0; background: #1a237e; color: white; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; line-height: 1.6;">-</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select class="expense-category">
+                            <option value="Hotel">Hotel</option>
+                            <option value="Meals">Meals</option>
+                            <option value="Car Rental">Car Rental</option>
+                            <option value="Airfare">Airfare</option>
+                            <option value="Gas/Fuel">Gas/Fuel</option>
+                            <option value="Parking">Parking</option>
+                            <option value="Tolls">Tolls</option>
+                            <option value="Taxi/Uber">Taxi/Uber</option>
+                            <option value="Office Supplies">Office Supplies</option>
+                            <option value="Internet/Phone">Internet/Phone</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" class="expense-description" placeholder="Brief description">
+                    </div>
+                    <div class="form-group">
+                        <label>Amount ($)</label>
+                        <input type="number" class="expense-amount" placeholder="0.00" step="0.01" min="0" oninput="calculateTotal()">
+                    </div>
+                    <div class="form-group">
+                        <label>Receipt Photo</label>
+                        <div class="receipt-buttons">
+                            <button class="btn btn-secondary btn-small" onclick="triggerCamera(${expenseId}, event)">📷 Camera</button>
+                            <button class="btn btn-secondary btn-small" onclick="triggerGallery(${expenseId}, event)">🖼️ Gallery</button>
+                            <button class="btn btn-secondary btn-small" id="edit-btn-${expenseId}" style="display:none;" onclick="openCropModal(${expenseId}, event)">✏️ Edit</button>
+                            <button class="btn btn-danger btn-small" id="delete-btn-${expenseId}" style="display:none;" onclick="deleteReceipt(${expenseId}, event)">🗑️ Delete Photo</button>
+                        </div>
+                        <input type="file" id="file-camera-${expenseId}" class="expense-receipt" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
+                        <input type="file" id="file-gallery-${expenseId}" class="expense-receipt" accept="image/*" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
+                        <div class="receipt-preview" id="preview-${expenseId}"></div>
+                    </div>
+                    <div class="form-group">
+                        <label style="opacity: 0;">Action</label>
+                        <button class="btn btn-danger" onclick="removeExpense(${expenseId})">Remove Expense</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('expenseList').insertAdjacentHTML('beforeend', expenseHTML);
+            
+            // Set today's date for new expense
+            const newExpense = document.getElementById(`expense-${expenseId}`);
+            newExpense.querySelector('.expense-date').valueAsDate = new Date();
+            
+            // Scroll to show the new expense (smooth scroll into view)
+            setTimeout(() => {
+                newExpense.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+            resequenceExpenses();
+        }
+
+        function removeExpense(id) {
+            showConfirm('Remove Expense', 'Are you sure you want to remove this expense?', function() {
+                const element = document.getElementById(`expense-${id}`);
+                if (element) {
+                    element.remove();
+                    delete receiptImages[id];
+                    calculateTotal();
+                    saveData();
+                    resequenceExpenses();
+                }
+            });
+        }
+
+        function handleReceiptUpload(input, expenseId) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    receiptImages[expenseId] = imageData;
+                    
+                    const preview = document.getElementById(`preview-${expenseId}`);
+                    
+                    // Image preview with click listener
+                    preview.innerHTML = `<img src="${imageData}" alt="Receipt" style="cursor: pointer;">`;
+                    
+                    // Add click listener
+                    const img = preview.querySelector('img');
+                    if (img) {
+                        img.addEventListener('click', function(e) {
+                            showReceiptModal(imageData, e);
+                        });
+                    }
+                    
+                    // Show edit and delete buttons
+                    document.getElementById(`edit-btn-${expenseId}`).style.display = 'inline-block';
+                    document.getElementById(`delete-btn-${expenseId}`).style.display = 'inline-block';
+                    
+                    // Auto-save to preserve the uploaded photo
+                    saveData();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function triggerCamera(expenseId, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById(`file-camera-${expenseId}`).click();
+        }
+
+        function triggerGallery(expenseId, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById(`file-gallery-${expenseId}`).click();
+        }
+
+        function deleteReceipt(expenseId, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            showConfirm('Delete Photo', 'Are you sure you want to delete this receipt photo?', function() {
+                delete receiptImages[expenseId];
+                document.getElementById(`preview-${expenseId}`).innerHTML = '';
+                const cameraInput = document.getElementById(`file-camera-${expenseId}`);
+                const galleryInput = document.getElementById(`file-gallery-${expenseId}`);
+                if (cameraInput) cameraInput.value = '';
+                if (galleryInput) galleryInput.value = '';
+                document.getElementById(`edit-btn-${expenseId}`).style.display = 'none';
+                document.getElementById(`delete-btn-${expenseId}`).style.display = 'none';
+                saveData();
+            });
+        }
+
+        function showReceiptModal(imageSrc, event) {
+            event.stopPropagation();
+            document.getElementById('modalImage').src = imageSrc;
+            document.getElementById('receiptModal').classList.add('show');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.remove('show');
+            document.getElementById('modalImage').src = '';
+        }
+
+        function openCropModal(expenseId, event) {
+            event.stopPropagation();
+            
+            if (!receiptImages[expenseId]) {
+                alert('No receipt image to edit');
+                return;
+            }
+
+            currentCropExpenseId = expenseId;
+            const cropImage = document.getElementById('cropImage');
+            cropImage.src = receiptImages[expenseId];
+
+            document.getElementById('cropModal').classList.add('show');
+        }
+
+        function closeCropModal() {
+            document.getElementById('cropModal').classList.remove('show');
+            // Reset perspective mode
+            if (perspectiveMode) {
+                cancelPerspectiveMode();
+            }
+            currentCropExpenseId = null;
+        }
+
+        function rotateCropImage(degrees) {
+            const cropImage = document.getElementById('cropImage');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const img = new Image();
+            img.onload = function() {
+                // Swap width and height for 90/270 degree rotations
+                if (degrees === 90 || degrees === 270) {
+                    canvas.width = img.height;
+                    canvas.height = img.width;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+                
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate(degrees * Math.PI / 180);
+                ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                
+                const rotatedImage = canvas.toDataURL('image/jpeg', 0.9);
+                cropImage.src = rotatedImage;
+                receiptImages[currentCropExpenseId] = rotatedImage;
+                
+                // Update preview
+                const preview = document.getElementById(`preview-${currentCropExpenseId}`);
+                if (preview) {
+                    preview.innerHTML = `<img src="${rotatedImage}" alt="Receipt" style="cursor: pointer;">`;
+                    preview.querySelector('img').addEventListener('click', function(e) {
+                        showReceiptModal(rotatedImage, e);
+                    });
+                }
+                
+                saveData();
+            };
+            img.src = cropImage.src;
+        }
+
+        function resetCrop() {
+            // No longer needed - removed
+        }
+
+        function zoomIn() {
+            // No longer needed - removed
+        }
+
+        function zoomOut() {
+            // No longer needed - removed
+        }
+
+        function togglePerspectiveMode() {
+            perspectiveMode = true;
+            
+            // Get the image
+            const cropImage = document.getElementById('cropImage');
+            const canvas = document.getElementById('perspectiveCanvas');
+            
+            if (!canvas) {
+                showStatus('❌ Canvas element not found', 'error');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+                showStatus('❌ Cannot get canvas context', 'error');
+                return;
+            }
+            
+            // Function to setup canvas once we have valid dimensions
+            const setupCanvas = () => {
+                // Try multiple methods to get dimensions
+                const imgRect = cropImage.getBoundingClientRect();
+                let displayWidth = Math.floor(imgRect.width);
+                let displayHeight = Math.floor(imgRect.height);
+                
+                // Fallback to other methods if getBoundingClientRect fails
+                if (displayWidth <= 0 || displayHeight <= 0) {
+                    displayWidth = cropImage.offsetWidth || cropImage.clientWidth;
+                    displayHeight = cropImage.offsetHeight || cropImage.clientHeight;
+                }
+                
+                // Last resort - use natural dimensions scaled to container
+                if (displayWidth <= 0 || displayHeight <= 0) {
+                    const container = cropImage.parentElement;
+                    const containerWidth = container.offsetWidth || 400;
+                    const ratio = cropImage.naturalHeight / cropImage.naturalWidth;
+                    displayWidth = containerWidth;
+                    displayHeight = Math.floor(containerWidth * ratio);
+                }
+                
+                if (displayWidth <= 0 || displayHeight <= 0) {
+                    showStatus('❌ Cannot determine image size', 'error');
+                    cropper.enable();
+                    return false;
+                }
+                
+                // Set canvas size to EXACTLY match the displayed image
+                canvas.width = displayWidth;
+                canvas.height = displayHeight;
+                canvas.style.width = displayWidth + 'px';
+                canvas.style.height = displayHeight + 'px';
+                canvas.style.display = 'block';
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.position = 'absolute';
+                canvas.style.top = '0';
+                canvas.style.left = '0';
+                canvas.style.zIndex = '10';
+                
+                // Set default corners (at image boundaries with margin)
+                setDefaultCorners(canvas);
+                
+                if (!corners || corners.length !== 4) {
+                    showStatus('❌ Failed to create corners', 'error');
+                    return false;
+                }
+                
+                // Draw the corners
+                try {
+                    drawCorners(ctx, canvas);
+                    showStatus('✓ Drag corners to document edges', 'success');
+                } catch (e) {
+                    showStatus('❌ Drawing failed: ' + e.message, 'error');
+                    return false;
+                }
+                
+                // Show perspective controls, hide normal controls
+                document.getElementById('perspectiveControls').style.display = 'block';
+                document.getElementById('cropControls').style.display = 'none';
+                document.getElementById('cropActions').style.display = 'none';
+                
+                // Remove old listeners if any
+                canvas.removeEventListener('mousedown', startDraggingCorner);
+                canvas.removeEventListener('mousemove', dragCorner);
+                canvas.removeEventListener('mouseup', stopDraggingCorner);
+                canvas.removeEventListener('touchstart', handleTouchStart);
+                canvas.removeEventListener('touchmove', handleTouchMove);
+                canvas.removeEventListener('touchend', stopDraggingCorner);
+                
+                // Add event listeners for corner dragging
+                canvas.addEventListener('mousedown', startDraggingCorner);
+                canvas.addEventListener('mousemove', dragCorner);
+                canvas.addEventListener('mouseup', stopDraggingCorner);
+                canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+                canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+                canvas.addEventListener('touchend', stopDraggingCorner);
+                
+                return true;
+            };
+            
+            // Try to setup immediately
+            if (!setupCanvas()) {
+                // If immediate setup fails, wait longer and retry
+                showStatus('⏳ Loading...', 'info');
+                setTimeout(() => {
+                    if (!setupCanvas()) {
+                        // One more try after longer delay
+                        setTimeout(setupCanvas, 500);
+                    }
+                }, 200);
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'error') {
+                statusDiv.style.background = '#f8d7da';
+                statusDiv.style.color = '#721c24';
+            } else if (type === 'success') {
+                statusDiv.style.background = '#d4edda';
+                statusDiv.style.color = '#155724';
+            } else {
+                statusDiv.style.background = '#fff3cd';
+                statusDiv.style.color = '#856404';
+            }
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function detectDocumentEdges(img, canvas, ctx) {
+            // Always start with default corners
+            setDefaultCorners(canvas);
+            
+            try {
+                // Create a temporary canvas to get image data
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.naturalWidth;
+                tempCanvas.height = img.naturalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0);
+                
+                console.log('Starting edge detection...');
+                
+                // Convert to OpenCV mat
+                let src = cv.imread(tempCanvas);
+                let gray = new cv.Mat();
+                let blurred = new cv.Mat();
+                let edged = new cv.Mat();
+                
+                // Convert to grayscale
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+                
+                // Blur and edge detection
+                cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
+                cv.Canny(blurred, edged, 75, 200);
+                
+                // Find contours
+                let contours = new cv.MatVector();
+                let hierarchy = new cv.Mat();
+                cv.findContours(edged, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+                
+                console.log('Found', contours.size(), 'contours');
+                
+                // Find largest contour
+                let maxArea = 0;
+                let maxContourIndex = -1;
+                for (let i = 0; i < contours.size(); i++) {
+                    let area = cv.contourArea(contours.get(i));
+                    if (area > maxArea) {
+                        maxArea = area;
+                        maxContourIndex = i;
+                    }
+                }
+                
+                console.log('Largest contour index:', maxContourIndex, 'area:', maxArea);
+                
+                if (maxContourIndex >= 0 && maxArea > (img.naturalWidth * img.naturalHeight * 0.1)) {
+                    let contour = contours.get(maxContourIndex);
+                    let peri = cv.arcLength(contour, true);
+                    let approx = new cv.Mat();
+                    cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+                    
+                    console.log('Approximated contour has', approx.rows, 'points');
+                    
+                    // If we found a quadrilateral
+                    if (approx.rows === 4) {
+                        // Scale corners from natural image size to displayed canvas size
+                        const scaleX = canvas.width / img.naturalWidth;
+                        const scaleY = canvas.height / img.naturalHeight;
+                        
+                        corners = [];
+                        for (let i = 0; i < 4; i++) {
+                            let x = approx.data32S[i * 2] * scaleX;
+                            let y = approx.data32S[i * 2 + 1] * scaleY;
+                            
+                            // Ensure corners are within bounds with margin
+                            x = Math.max(15, Math.min(canvas.width - 15, x));
+                            y = Math.max(15, Math.min(canvas.height - 15, y));
+                            
+                            corners.push({ x, y });
+                        }
+                        
+                        // Order corners: top-left, top-right, bottom-right, bottom-left
+                        corners = orderCorners(corners);
+                        
+                        console.log('Detected corners:', corners);
+                        console.log('Canvas size:', canvas.width, 'x', canvas.height);
+                    } else {
+                        console.log('Not a quadrilateral, using default corners');
+                    }
+                    
+                    approx.delete();
+                } else {
+                    console.log('No suitable contour found, using default corners');
+                }
+                
+                // Clean up
+                src.delete();
+                gray.delete();
+                blurred.delete();
+                edged.delete();
+                contours.delete();
+                hierarchy.delete();
+                
+            } catch (e) {
+                console.error('Edge detection failed:', e);
+                // Corners are already set to defaults at the start
+            }
+            
+            // Always draw the corners
+            console.log('Drawing corners:', corners);
+            drawCorners(ctx, canvas);
+        }
+
+        function setDefaultCorners(canvas) {
+            const margin = 40; // Larger margin for mobile visibility
+            corners = [
+                { x: margin, y: margin }, // top-left
+                { x: canvas.width - margin, y: margin }, // top-right
+                { x: canvas.width - margin, y: canvas.height - margin }, // bottom-right
+                { x: margin, y: canvas.height - margin } // bottom-left
+            ];
+        }
+
+        function orderCorners(pts) {
+            // Calculate center point
+            const centerX = pts.reduce((sum, p) => sum + p.x, 0) / pts.length;
+            const centerY = pts.reduce((sum, p) => sum + p.y, 0) / pts.length;
+            
+            // Sort by angle from center
+            pts.forEach(p => {
+                p.angle = Math.atan2(p.y - centerY, p.x - centerX);
+            });
+            
+            pts.sort((a, b) => a.angle - b.angle);
+            
+            // Find top-left (smallest angle in upper half)
+            let topLeft = 0;
+            let minY = pts[0].y;
+            pts.forEach((p, i) => {
+                if (p.y < minY) {
+                    minY = p.y;
+                    topLeft = i;
+                }
+            });
+            
+            // Rotate array so top-left is first
+            const ordered = [];
+            for (let i = 0; i < 4; i++) {
+                ordered.push(pts[(topLeft + i) % 4]);
+            }
+            
+            // Ensure correct order: top-left, top-right, bottom-right, bottom-left
+            // Check if we need to reverse (if second point is actually bottom-left)
+            if (ordered[1].y > ordered[0].y && ordered[1].x < ordered[0].x) {
+                ordered.reverse();
+                const temp = ordered[0];
+                ordered[0] = ordered[ordered.length - 1];
+                ordered[ordered.length - 1] = temp;
+            }
+            
+            return ordered;
+        }
+
+        function drawCorners(ctx, canvas) {
+            if (!corners || corners.length !== 4) {
+                return;
+            }
+            
+            // Clear everything first
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Test draw - red rectangle
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw semi-transparent black overlay
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Clear the document area
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            ctx.lineTo(corners[1].x, corners[1].y);
+            ctx.lineTo(corners[2].x, corners[2].y);
+            ctx.lineTo(corners[3].x, corners[3].y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalCompositeOperation = 'source-over';
+            
+            // Draw bright green border
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            ctx.lineTo(corners[1].x, corners[1].y);
+            ctx.lineTo(corners[2].x, corners[2].y);
+            ctx.lineTo(corners[3].x, corners[3].y);
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Draw LARGE corner circles for mobile
+            for (let i = 0; i < 4; i++) {
+                const corner = corners[i];
+                
+                // Large outer glow
+                ctx.fillStyle = 'rgba(0, 255, 0, 0.4)';
+                ctx.beginPath();
+                ctx.arc(corner.x, corner.y, 30, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Main bright green circle
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.arc(corner.x, corner.y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // White inner circle
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(corner.x, corner.y, 15, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Black number
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText((i + 1).toString(), corner.x, corner.y);
+            }
+        }
+
+        function startDraggingCorner(e) {
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Find closest corner with larger hit area
+            let minDist = Infinity;
+            corners.forEach((corner, index) => {
+                const dist = Math.sqrt((x - corner.x) ** 2 + (y - corner.y) ** 2);
+                if (dist < 30 && dist < minDist) {
+                    minDist = dist;
+                    selectedCorner = index;
+                }
+            });
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            // Find closest corner with larger hit area for touch
+            let minDist = Infinity;
+            corners.forEach((corner, index) => {
+                const dist = Math.sqrt((x - corner.x) ** 2 + (y - corner.y) ** 2);
+                if (dist < 40 && dist < minDist) {
+                    minDist = dist;
+                    selectedCorner = index;
+                }
+            });
+        }
+
+        function dragCorner(e) {
+            if (selectedCorner === null) return;
+            
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            corners[selectedCorner] = {
+                x: Math.max(0, Math.min(canvas.width, x)),
+                y: Math.max(0, Math.min(canvas.height, y))
+            };
+            
+            const ctx = canvas.getContext('2d');
+            drawCorners(ctx, canvas);
+        }
+
+        function handleTouchMove(e) {
+            if (selectedCorner === null) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const canvas = document.getElementById('perspectiveCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            corners[selectedCorner] = {
+                x: Math.max(0, Math.min(canvas.width, x)),
+                y: Math.max(0, Math.min(canvas.height, y))
+            };
+            
+            const ctx = canvas.getContext('2d');
+            drawCorners(ctx, canvas);
+        }
+
+        function stopDraggingCorner() {
+            selectedCorner = null;
+        }
+
+        function applyPerspectiveCorrection() {
+            if (corners.length !== 4) {
+                showStatus('❌ Need 4 corners to apply correction', 'error');
+                return;
+            }
+            
+            if (!window.cv || !cv.imread) {
+                showStatus('⚠️ Perspective correction unavailable - just using crop', 'error');
+                // Fall back to just cropping
+                setTimeout(() => {
+                    cancelPerspectiveMode();
+                }, 2000);
+                return;
+            }
+            
+            try {
+                const cropImage = document.getElementById('cropImage');
+                const canvas = document.getElementById('perspectiveCanvas');
+                
+                showStatus('⏳ Processing...', 'info');
+                
+                // Scale corners from displayed size back to natural image size
+                const scaleX = cropImage.naturalWidth / canvas.width;
+                const scaleY = cropImage.naturalHeight / canvas.height;
+                
+                const srcCorners = corners.map(c => ({
+                    x: c.x * scaleX,
+                    y: c.y * scaleY
+                }));
+                
+                // Calculate destination dimensions
+                const width = Math.max(
+                    Math.sqrt((srcCorners[1].x - srcCorners[0].x) ** 2 + (srcCorners[1].y - srcCorners[0].y) ** 2),
+                    Math.sqrt((srcCorners[2].x - srcCorners[3].x) ** 2 + (srcCorners[2].y - srcCorners[3].y) ** 2)
+                );
+                const height = Math.max(
+                    Math.sqrt((srcCorners[3].x - srcCorners[0].x) ** 2 + (srcCorners[3].y - srcCorners[0].y) ** 2),
+                    Math.sqrt((srcCorners[2].x - srcCorners[1].x) ** 2 + (srcCorners[2].y - srcCorners[1].y) ** 2)
+                );
+                
+                // Create transformation matrix
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = cropImage.naturalWidth;
+                tempCanvas.height = cropImage.naturalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(cropImage, 0, 0);
+                
+                let src = cv.imread(tempCanvas);
+                let dst = new cv.Mat();
+                
+                let srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    srcCorners[0].x, srcCorners[0].y,
+                    srcCorners[1].x, srcCorners[1].y,
+                    srcCorners[2].x, srcCorners[2].y,
+                    srcCorners[3].x, srcCorners[3].y
+                ]);
+                
+                let dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    0, 0,
+                    width, 0,
+                    width, height,
+                    0, height
+                ]);
+                
+                let M = cv.getPerspectiveTransform(srcTri, dstTri);
+                cv.warpPerspective(src, dst, M, new cv.Size(width, height));
+                
+                // SCAN ENHANCEMENT - Make it look like a clean scan
+                // Convert to grayscale
+                let gray = new cv.Mat();
+                cv.cvtColor(dst, gray, cv.COLOR_RGBA2GRAY);
+                
+                // Apply adaptive thresholding to get clean black text on white background
+                let binary = new cv.Mat();
+                cv.adaptiveThreshold(gray, binary, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, cv.THRESH_BINARY, 15, 10);
+                
+                // Optional: slight gaussian blur to reduce noise
+                let blurred = new cv.Mat();
+                cv.GaussianBlur(binary, blurred, new cv.Size(3, 3), 0);
+                
+                // Convert back to image
+                const outputCanvas = document.createElement('canvas');
+                cv.imshow(outputCanvas, blurred);
+                const correctedImage = outputCanvas.toDataURL('image/jpeg', 0.92);
+                
+                // Update the receipt image
+                receiptImages[currentCropExpenseId] = correctedImage;
+                
+                // Update preview
+                const escapedImage = correctedImage.replace(/'/g, "\\'");
+                const preview = document.getElementById(`preview-${currentCropExpenseId}`);
+                preview.innerHTML = `<img src="${correctedImage}" alt="Receipt" onclick="showReceiptModal('${escapedImage}', event)">`;
+                
+                // IMPORTANT: Auto-save immediately to preserve the enhanced image
+                saveData();
+                
+                // Clean up
+                src.delete();
+                dst.delete();
+                gray.delete();
+                binary.delete();
+                blurred.delete();
+                srcTri.delete();
+                dstTri.delete();
+                M.delete();
+                
+                // Show success and close
+                showStatus('✓ Receipt scanned and saved!', 'success');
+                
+                setTimeout(() => {
+                    closeCropModal();
+                }, 1000);
+                
+            } catch (e) {
+                showStatus('❌ Correction failed - ' + e.message, 'error');
+                setTimeout(() => {
+                    cancelPerspectiveMode();
+                }, 2000);
+            }
+        }
+
+        function cancelPerspectiveMode() {
+            perspectiveMode = false;
+            selectedCorner = null;
+            corners = [];
+            
+            const canvas = document.getElementById('perspectiveCanvas');
+            canvas.style.display = 'none';
+            canvas.style.pointerEvents = 'none';
+            
+            document.getElementById('perspectiveControls').style.display = 'none';
+            document.getElementById('cropControls').style.display = 'flex';
+            document.getElementById('cropActions').style.display = 'flex';
+        }
+
+        function calculateTotal() {
+            let total = 0;
+
+            // Add mileage
+            const mileageTotal = document.getElementById('mileageTotal').value;
+            if (mileageTotal) {
+                total += parseFloat(mileageTotal.replace('$', '')) || 0;
+            }
+
+            // Add other expenses
+            const amounts = document.querySelectorAll('.expense-amount');
+            amounts.forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+
+            document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function clearForm() {
+            const currentReport = document.getElementById('reportNumber').value;
+            const doClear = function() {
+                // Note: We do NOT clear technician name or mileage rate - they persist
+                document.getElementById('reportNumber').value = '';
+                document.getElementById('companyName').value = '';
+                document.getElementById('machineSerial').value = '';
+                document.getElementById('serviceLocation').value = '';
+                const _today = new Date();
+                const _fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const _t = _fmt(_today);
+                document.getElementById('serviceDateFrom').value = _t;
+                document.getElementById('serviceDateTo').value = _t;
+                initDatePicker(_t, _t);
+                document.getElementById('milesDriven').value = '';
+                document.getElementById('mileageTotal').value = '';
+                document.getElementById('cashAdvance').value = '0';
+                document.getElementById('otherAdvance').value = '0';
+
+                // Clear all expenses and receipt images
+                document.getElementById('expenseList').innerHTML = '';
+                receiptImages = {};
+
+                // Add one fresh blank expense
+                addExpense();
+
+                // Recalculate total
+                calculateTotal();
+
+                // Clear saved data from localStorage (but keep technician name and mileage rate)
+                localStorage.removeItem('expenseReportData');
+            };
+
+            if (currentReport) {
+                showConfirm('Save Current Report?', 'Do you want to save the current report before clearing?\n\nYes = Save to file + internal storage, then clear.\nNo = Clear without saving.', function() {
+                    saveReportInternally(function() {
+                        showConfirm('Clear All', 'Report saved. Are you sure you want to clear all data?', doClear);
+                    });
+                }, function() {
+                    showConfirm('Clear All', 'Are you sure you want to clear all data?', doClear);
+                });
+            } else {
+                showConfirm('Clear All', 'Are you sure you want to clear all data?', doClear);
+            }
+        }
+
+        function clearLocalStorage() {
+            if (confirm('⚠️ This will clear the auto-saved data for THIS location.\n\nThe form will remain as-is, but when you refresh or reopen, it will start fresh.\n\nAre you sure?')) {
+                localStorage.removeItem('expenseReportData');
+                updateStorageInfo(); // Update display
+                alert('✓ Auto-save cleared! Current form data is still here, but won\'t reload on next visit unless you make changes.');
+            }
+        }
+
+        // Payment Tracking Functions
+        function loadSubmittedReports() {
+            try {
+                const saved = localStorage.getItem('submittedReports');
+                if (saved) {
+                    submittedReports = JSON.parse(saved);
+                }
+                updatePaymentTrackingButton();
+            } catch (e) {
+                console.error('Failed to load submitted reports:', e);
+            }
+        }
+
+        function saveSubmittedReports() {
+            try {
+                localStorage.setItem('submittedReports', JSON.stringify(submittedReports));
+                updatePaymentTrackingButton();
+            } catch (e) {
+                console.error('Failed to save submitted reports:', e);
+            }
+        }
+
+        // Capture all current form data as a serializable object
+        function captureCurrentFormData() {
+            const data = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                technicianName: document.getElementById('technicianName').value,
+                reportNumber: document.getElementById('reportNumber').value,
+                companyName: document.getElementById('companyName').value,
+                machineSerial: document.getElementById('machineSerial').value,
+                serviceLocation: document.getElementById('serviceLocation').value,
+                serviceDateFrom: document.getElementById('serviceDateFrom').value,
+                serviceDateTo: document.getElementById('serviceDateTo').value,
+                milesDriven: document.getElementById('milesDriven').value,
+                mileageRate: document.getElementById('mileageRate').value,
+                cashAdvance: document.getElementById('cashAdvance').value,
+                otherAdvance: document.getElementById('otherAdvance').value,
+                expenses: [],
+                receiptImages: receiptImages
+            };
+            document.querySelectorAll('.expense-entry').forEach(entry => {
+                const expenseId = entry.id.replace('expense-', '');
+                data.expenses.push({
+                    id: expenseId,
+                    date: entry.querySelector('.expense-date').value,
+                    category: entry.querySelector('.expense-category').value,
+                    description: entry.querySelector('.expense-description').value,
+                    amount: entry.querySelector('.expense-amount').value
+                });
+            });
+            return data;
+        }
+
+        // Save current report to internal storage only (submittedReports)
+        function saveReportInternally(callback) {
+            const reportNumber = document.getElementById('reportNumber').value;
+            const companyName = document.getElementById('companyName').value;
+            if (!reportNumber || !companyName) {
+                if (callback) callback();
+                return;
+            }
+            const data = captureCurrentFormData();
+            const existingIndex = submittedReports.findIndex(r => r.reportNumber === reportNumber);
+            if (existingIndex >= 0) {
+                submittedReports[existingIndex].reportData = data;
+                submittedReports[existingIndex].amount = document.getElementById('totalAmount').textContent;
+            } else {
+                submittedReports.unshift({
+                    id: Date.now(),
+                    date: data.serviceDateFrom || new Date().toISOString().split('T')[0],
+                    reportNumber: reportNumber,
+                    companyName: companyName,
+                    amount: document.getElementById('totalAmount').textContent,
+                    paid: false,
+                    submittedDate: new Date().toISOString(),
+                    pdfData: null,
+                    reportData: data
+                });
+            }
+            saveSubmittedReports();
+            if (callback) callback();
+        }
+
+        // Load a report from payment tracking into the form
+        function loadReportFromTracking(index) {
+            const report = submittedReports[index];
+            if (!report || !report.reportData) {
+                showDialog('Report Not Available', 'No saved report data for this entry. Re-export the PDF to enable loading.');
+                return;
+            }
+            // Ask to save current report first
+            const currentReport = document.getElementById('reportNumber').value;
+            if (currentReport) {
+                showConfirm('Save Current Report?', 'Do you want to save the current report before loading a different one?', function() {
+                    saveReportInternally(function() {
+                        closePaymentTracking();
+                        loadReportData(report.reportData);
+                    });
+                }, function() {
+                    closePaymentTracking();
+                    loadReportData(report.reportData);
+                });
+            } else {
+                closePaymentTracking();
+                loadReportData(report.reportData);
+            }
+        }
+
+        function addReportToPaymentTracking(pdfDataUri) {
+            const reportNumber = document.getElementById('reportNumber').value;
+            const companyName = document.getElementById('companyName').value;
+            const serviceDateFrom = document.getElementById('serviceDateFrom').value;
+            const totalAmount = document.getElementById('totalAmount').textContent;
+
+            if (!reportNumber || !companyName) {
+                return; // Don't add if required fields are missing
+            }
+
+            // Capture full report data snapshot
+            const reportData = captureCurrentFormData();
+
+            // Check if this report already exists (by report number ONLY)
+            const existingIndex = submittedReports.findIndex(r => 
+                r.reportNumber === reportNumber
+            );
+
+            const report = {
+                id: Date.now(),
+                date: serviceDateFrom || new Date().toISOString().split('T')[0],
+                reportNumber: reportNumber,
+                companyName: companyName,
+                amount: totalAmount,
+                paid: false,
+                submittedDate: new Date().toISOString(),
+                pdfData: pdfDataUri || null,
+                reportData: reportData
+            };
+
+            if (existingIndex >= 0) {
+                // Update existing report (preserves payment status)
+                report.id = submittedReports[existingIndex].id;
+                report.paid = submittedReports[existingIndex].paid;
+                submittedReports[existingIndex] = report;
+            } else {
+                // Add new report at the beginning (newest first)
+                submittedReports.unshift(report);
+            }
+
+            saveSubmittedReports();
+        }
+
+        function openReportPDF(index) {
+            const report = submittedReports[index];
+            if (!report || !report.pdfData) {
+                showDialog('PDF Not Available', 'No PDF is saved for this report. Re-export the PDF to enable viewing.');
+                return;
+            }
+            // Convert data URI to Blob then open as blob URL — works reliably on all browsers
+            try {
+                const base64 = report.pdfData.split(',')[1];
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+            } catch(e) {
+                showDialog('Error', 'Could not open PDF: ' + e.message);
+            }
+        }
+
+        function openPaymentTracking() {
+            updatePaymentList();
+            document.getElementById('paymentModal').classList.add('show');
+        }
+
+        function closePaymentTracking() {
+            document.getElementById('paymentModal').classList.remove('show');
+        }
+
+        function updatePaymentList() {
+            const listContainer = document.getElementById('paymentList');
+            
+            if (submittedReports.length === 0) {
+                listContainer.innerHTML = '<div class="payment-empty">No reports submitted yet</div>';
+                document.getElementById('paymentTotalOwed').textContent = '$0.00';
+                return;
+            }
+
+            let totalOwed = 0;
+            let html = '';
+
+            // Show newest first (already sorted)
+            submittedReports.forEach((report, index) => {
+                const paidClass = report.paid ? 'paid' : '';
+                const amount = parseFloat(report.amount.replace('$', '').replace(',', '')) || 0;
+                
+                if (!report.paid) {
+                    totalOwed += amount;
+                }
+
+                const hasPdf = report.pdfData ? 'has-pdf' : '';
+                const checkStyle = report.paid
+                    ? 'background:#28a745; color:white; border-color:#28a745;'
+                    : 'background:white; color:#ccc; border-color:#ccc;';
+                const pdfBtnStyle = report.pdfData ? 'color:#c0392b;' : 'opacity:0.3; cursor:not-allowed;';
+                const loadBtnStyle = report.reportData ? '' : 'opacity:0.3; cursor:not-allowed;';
+                html += `
+                    <div class="payment-item ${paidClass} ${hasPdf}" style="display:flex; align-items:stretch; padding:0; overflow:hidden;">
+                        <div style="flex:1; padding:12px 15px; min-width:0;">
+                            <div class="payment-customer-name">${report.companyName}</div>
+                            <div style="display:flex; gap:12px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+                                <span class="payment-date">${report.date}</span>
+                                <span class="payment-report-num">#${report.reportNumber}</span>
+                                <span class="payment-amount">${report.amount}</span>
+                            </div>
+                        </div>
+                        <button class="payment-action-btn" onclick="event.stopPropagation(); openReportPDF(${index})" title="View PDF" style="${pdfBtnStyle}">
+                            <svg width="26" height="30" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="1" width="18" height="24" rx="2" fill="white" stroke="#c0392b" stroke-width="1.5"/>
+                                <path d="M5 1v5a1 1 0 001 1h5" stroke="#c0392b" stroke-width="1.5" fill="none"/>
+                                <rect x="0" y="15" width="26" height="10" rx="2" fill="#c0392b"/>
+                                <text x="13" y="23.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="7.5" font-weight="bold" fill="white">PDF</text>
+                            </svg>
+                            <span>PDF</span>
+                        </button>
+                        <button class="payment-action-btn" onclick="event.stopPropagation(); loadReportFromTracking(${index})" title="Load Report" style="${loadBtnStyle}">
+                            <svg width="26" height="30" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="5" width="24" height="20" rx="2" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+                                <path d="M1 11h24" stroke="#2563eb" stroke-width="1.5"/>
+                                <path d="M5 5V3a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#2563eb" stroke-width="1.5" fill="none"/>
+                                <path d="M13 18l-4-4m0 0l4-4m-4 4h8" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>LOAD</span>
+                        </button>
+                        <div class="payment-check-btn" onclick="event.stopPropagation(); togglePaymentStatus(${index})">
+                            <div style="width:36px; height:36px; border-radius:50%; border:2px solid; display:flex; align-items:center; justify-content:center; font-size:20px; transition:all 0.2s; ${checkStyle}">
+                                ✓
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+            document.getElementById('paymentTotalOwed').textContent = `$${totalOwed.toFixed(2)}`;
+        }
+
+        function togglePaymentStatus(index) {
+            submittedReports[index].paid = !submittedReports[index].paid;
+            saveSubmittedReports();
+            updatePaymentList();
+        }
+
+        function updatePaymentTrackingButton() {
+            const button = document.getElementById('paymentTrackingBtn');
+            const amountSpan = document.getElementById('paymentTrackingAmount');
+            
+            let totalOwed = 0;
+            let allPaid = submittedReports.length > 0;
+
+            submittedReports.forEach(report => {
+                const amount = parseFloat(report.amount.replace('$', '').replace(',', '')) || 0;
+                if (!report.paid) {
+                    totalOwed += amount;
+                    allPaid = false;
+                }
+            });
+
+            if (allPaid && submittedReports.length > 0) {
+                button.classList.add('all-paid');
+                amountSpan.textContent = '✅ All Paid!';
+            } else {
+                button.classList.remove('all-paid');
+                amountSpan.textContent = `$${totalOwed.toFixed(2)} Owed`;
+            }
+        }
+
+        function generatePDF() {
+            // Validate required fields
+            const technicianName = document.getElementById('technicianName').value;
+            const reportNumber = document.getElementById('reportNumber').value;
+            const companyName = document.getElementById('companyName').value;
+            const machineSerial = document.getElementById('machineSerial').value;
+            const serviceLocation = document.getElementById('serviceLocation').value;
+            const serviceDateFrom = document.getElementById('serviceDateFrom').value;
+            const serviceDateTo = document.getElementById('serviceDateTo').value;
+
+            if (!technicianName || !reportNumber || !companyName || !serviceLocation || !serviceDateFrom || !serviceDateTo) {
+                showDialog('Missing Information', 'Please fill in all required report information fields marked with (*)');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Professional header - INK EFFICIENT (minimal color)
+            // Company name at top
+            doc.setFontSize(16);
+            doc.setTextColor(74, 95, 169);
+            doc.setFont(undefined, 'bold');
+            doc.text('ORICS INDUSTRIES', 105, 10, { align: 'center' });
+            
+            // Thin line separator
+            doc.setDrawColor(74, 95, 169);
+            doc.setLineWidth(0.5);
+            doc.line(10, 15, 200, 15);
+            
+            // Report title - simple black text
+            doc.setFontSize(14);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont(undefined, 'bold');
+            doc.text('SERVICE EXPENSE REPORT', 105, 22, { align: 'center' });
+
+            // Report Info - two-column layout
+            // Left column: Technician, Report Number, Service Dates
+            // Right column: Customer/Company, Machine Serial, Service Location
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+
+            // Parse dates first (needed for both layout and yPos calculation)
+            const fromDateParts = serviceDateFrom.split('-');
+            const fromDateObj = new Date(fromDateParts[0], fromDateParts[1] - 1, fromDateParts[2]);
+            const toDateParts = serviceDateTo.split('-');
+            const toDateObj = new Date(toDateParts[0], toDateParts[1] - 1, toDateParts[2]);
+            const fromDate = fromDateObj.toLocaleDateString();
+            const toDate = toDateObj.toLocaleDateString();
+            const dateRange = fromDate === toDate ? fromDate : `${fromDate} - ${toDate}`;
+
+            // Column positions
+            const colL = 20;   // Left col label start
+            const colLv = 62;  // Left col value start
+            const colR = 112;  // Right col label start
+            const colRv = 152; // Right col value start
+
+            let yLeft = 30;
+            let yRight = 30;
+
+            // LEFT: Technician
+            doc.setFont(undefined, 'bold');
+            doc.text('Technician:', colL, yLeft);
+            doc.setFont(undefined, 'normal');
+            doc.text(technicianName, colLv, yLeft);
+            yLeft += 7;
+
+            // LEFT: Report Number
+            doc.setFont(undefined, 'bold');
+            doc.text('Report No:', colL, yLeft);
+            doc.setFont(undefined, 'normal');
+            doc.text(reportNumber, colLv, yLeft);
+            yLeft += 7;
+
+            // LEFT: Service Dates
+            doc.setFont(undefined, 'bold');
+            doc.text('Service Dates:', colL, yLeft);
+            doc.setFont(undefined, 'normal');
+            doc.text(dateRange, colLv, yLeft);
+            yLeft += 7;
+
+            // RIGHT: Customer/Company
+            doc.setFont(undefined, 'bold');
+            doc.text('Customer:', colR, yRight);
+            doc.setFont(undefined, 'normal');
+            // Truncate long names to fit column
+            const companyText = doc.splitTextToSize(companyName, 55)[0];
+            doc.text(companyText, colRv, yRight);
+            yRight += 7;
+
+            // RIGHT: Machine Serial (always shown in right col, blank if empty)
+            doc.setFont(undefined, 'bold');
+            doc.text('Serial No:', colR, yRight);
+            doc.setFont(undefined, 'normal');
+            doc.text(machineSerial || '—', colRv, yRight);
+            yRight += 7;
+
+            // RIGHT: Service Location
+            doc.setFont(undefined, 'bold');
+            doc.text('Location:', colR, yRight);
+            doc.setFont(undefined, 'normal');
+            const locationText = doc.splitTextToSize(serviceLocation, 55)[0];
+            doc.text(locationText, colRv, yRight);
+            yRight += 7;
+
+            // Vertical divider between columns
+            doc.setDrawColor(200, 200, 200);
+            doc.setLineWidth(0.3);
+            doc.line(108, 28, 108, Math.max(yLeft, yRight) - 2);
+
+            // Move yPos past both columns + spacing
+            let yPos = Math.max(yLeft, yRight) + 8;
+
+            // Thin separator line before expense sections
+            doc.setDrawColor(74, 95, 169);
+            doc.setLineWidth(0.4);
+            doc.line(10, yPos - 4, 200, yPos - 4);
+
+            // Mileage Section
+            const miles = parseFloat(document.getElementById('milesDriven').value) || 0;
+            const rate = parseFloat(document.getElementById('mileageRate').value) || 0;
+            const mileageTotal = miles * rate;
+
+            if (miles > 0) {
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('MILEAGE (Personal Vehicle)', 20, yPos);
+                yPos += 8;
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Miles Driven', 'Rate per Mile', 'Total']],
+                    body: [[miles.toFixed(1), `$${rate.toFixed(3)}`, `$${mileageTotal.toFixed(2)}`]],
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 35, 126] },
+                    margin: { left: 20, right: 20 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Other Expenses Section
+            const expenseData = [];
+            const expenseEntries = document.querySelectorAll('.expense-entry');
+            
+            let expenseSeq = 0;
+            expenseEntries.forEach(entry => {
+                const date = entry.querySelector('.expense-date').value;
+                const category = entry.querySelector('.expense-category').value;
+                const description = entry.querySelector('.expense-description').value;
+                const amount = parseFloat(entry.querySelector('.expense-amount').value) || 0;
+                
+                if (amount > 0 || description) {
+                    expenseSeq++;
+                    expenseData.push([
+                        expenseSeq,
+                        new Date(date).toLocaleDateString(),
+                        category,
+                        description || '-',
+                        `$${amount.toFixed(2)}`
+                    ]);
+                }
+            });
+
+            if (expenseData.length > 0) {
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('OTHER EXPENSES', 20, yPos);
+                yPos += 8;
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['#', 'Date', 'Category', 'Description', 'Amount']],
+                    body: expenseData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 35, 126] },
+                    columnStyles: { 0: { cellWidth: 10, halign: 'center' } },
+                    margin: { left: 20, right: 20 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Advances Section
+            const cashAdvance = parseFloat(document.getElementById('cashAdvance').value) || 0;
+            const otherAdvance = parseFloat(document.getElementById('otherAdvance').value) || 0;
+            
+            if (cashAdvance > 0 || otherAdvance > 0) {
+                // Check if we need a new page
+                if (yPos > 230) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('ADVANCES', 20, yPos);
+                yPos += 8;
+
+                const advanceData = [];
+                if (cashAdvance > 0) {
+                    advanceData.push(['Cash Advance', `$${cashAdvance.toFixed(2)}`]);
+                }
+                if (otherAdvance > 0) {
+                    advanceData.push(['Other Advance', `$${otherAdvance.toFixed(2)}`]);
+                }
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [['Type', 'Amount']],
+                    body: advanceData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [26, 35, 126] },
+                    margin: { left: 20, right: 20 }
+                });
+
+                yPos = doc.lastAutoTable.finalY + 10;
+            }
+
+            // Total - MOVED BEFORE RECEIPT IMAGES
+            const totalAmount = document.getElementById('totalAmount').textContent;
+            
+            // Check if we need a new page for the total
+            if (yPos > 250) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            // TOTAL - ink efficient with just a border
+            doc.setDrawColor(0, 0, 0);
+            doc.setLineWidth(0.5);
+            doc.rect(20, yPos, 170, 12);
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text('TOTAL EXPENSES:', 25, yPos + 8);
+            doc.text(totalAmount, 185, yPos + 8, { align: 'right' });
+
+            yPos += 20;
+
+            // Add receipt images if they exist
+            const receiptIds = Object.keys(receiptImages);
+            if (receiptIds.length > 0) {
+                // Check if we need a new page
+                if (yPos > 200) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+
+                doc.setFontSize(12);
+                doc.setFont(undefined, 'bold');
+                doc.text('RECEIPT IMAGES', 20, yPos);
+                yPos += 10;
+
+                let xPos = 20;
+                let imagesInRow = 0;
+                const maxImagesPerRow = 2;
+                const maxWidth = 80;  // Maximum width per image
+                const maxHeight = 100; // Maximum height per image
+                const spacing = 10;
+                let maxHeightInRow = 0; // Track tallest image in current row
+
+                // Build a map of expenseId -> sequence number (only counting expenses with data)
+                const expenseSeqMap = {};
+                let seqCounter = 0;
+                document.querySelectorAll('.expense-entry').forEach(entry => {
+                    const amt = parseFloat(entry.querySelector('.expense-amount').value) || 0;
+                    const desc = entry.querySelector('.expense-description').value;
+                    if (amt > 0 || desc) {
+                        seqCounter++;
+                        const eid = entry.id.replace('expense-', '');
+                        expenseSeqMap[eid] = seqCounter;
+                    }
+                });
+
+                // Process receipts sequentially to handle async PDF conversions
+                for (const expenseId of receiptIds) {
+                    if (receiptImages[expenseId]) {
+                        // Get the expense details for labeling
+                        const expenseEntry = document.getElementById(`expense-${expenseId}`);
+                        if (expenseEntry) {
+                            const category = expenseEntry.querySelector('.expense-category').value;
+                            const amount = expenseEntry.querySelector('.expense-amount').value;
+                            const seqNum = expenseSeqMap[expenseId] || '?';
+                            
+                            // Check if we need a new row or page
+                            if (imagesInRow >= maxImagesPerRow) {
+                                imagesInRow = 0;
+                                xPos = 20;
+                                yPos += maxHeightInRow + spacing + 10;
+                                maxHeightInRow = 0;
+                                
+                                if (yPos > 220) {
+                                    doc.addPage();
+                                    yPos = 20;
+                                }
+                            }
+
+                            // Add label
+                            doc.setFontSize(9);
+                            doc.setFont(undefined, 'normal');
+                            doc.text(`#${seqNum} - ${category} - $${amount}`, xPos, yPos);
+                            
+                            // Add image with proper aspect ratio
+                            try {
+                                const img = new Image();
+                                img.src = receiptImages[expenseId];
+                                
+                                let imgWidth = maxWidth;
+                                let imgHeight = maxHeight;
+                                
+                                // Calculate aspect ratio
+                                const aspectRatio = img.width / img.height;
+                                
+                                if (aspectRatio > 1) {
+                                    // Landscape - width is limiting
+                                    imgWidth = maxWidth;
+                                    imgHeight = maxWidth / aspectRatio;
+                                } else {
+                                    // Portrait - height is limiting
+                                    imgHeight = maxHeight;
+                                    imgWidth = maxHeight * aspectRatio;
+                                }
+                                
+                                // Add image with proper dimensions
+                                doc.addImage(receiptImages[expenseId], 'JPEG', xPos, yPos + 3, imgWidth, imgHeight);
+                                
+                                // Track max height for row spacing
+                                maxHeightInRow = Math.max(maxHeightInRow, imgHeight);
+                                
+                                xPos += maxWidth + spacing;
+                                imagesInRow++;
+                            } catch (e) {
+                                console.error('Error adding image:', e);
+                                xPos += maxWidth + spacing;
+                                imagesInRow++;
+                            }
+                        }
+                    }
+                }
+
+                yPos += maxHeightInRow + 15;
+            }
+
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setTextColor(150, 150, 150);
+                doc.setFontSize(8);
+                doc.text('ORICS INDUSTRIES - Service Report', 105, 285, { align: 'center' });
+                doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, 290, { align: 'center' });
+                doc.text(`Page ${i} of ${pageCount}`, 105, 295, { align: 'center' });
+            }
+
+            // Save PDF
+            const cleanReportNumber = reportNumber.replace(/[^a-z0-9]/gi, '_');
+            const cleanCompanyName = companyName.replace(/[^a-z0-9]/gi, '_');
+            const filename = `Orics_${cleanCompanyName}_${cleanReportNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+            doc.save(filename);
+            
+            // Capture PDF data for payment tracking viewer
+            const pdfDataUri = doc.output('datauristring');
+            
+            // Add to payment tracking
+            addReportToPaymentTracking(pdfDataUri);
+            
+            // Don't auto-clear after PDF export - user may want to save report file too
+            updateCustomerDB();
+            showDialog('Success', 'PDF exported successfully!\n\nReport has been added to Payment Tracking.');
+        }
+
+        function exportToFile() {
+            const technicianName = document.getElementById('technicianName').value;
+            const reportNumber = document.getElementById('reportNumber').value;
+            const companyName = document.getElementById('companyName').value;
+            
+            if (!technicianName || !reportNumber || !companyName) {
+                showDialog('Missing Information', 'Please fill in:\n• Technician Name\n• Service Report Number\n• Customer Name\n\nThese fields are required before saving.');
+                return;
+            }
+
+            saveReportInternally(function() {
+                showDialog('Report Saved', 'Report saved to Payment Tracking.\n\nYou can load it anytime using "Load Report File".');
+            });
+        }
+
+        function openLoadReportModal() {
+            const list = document.getElementById('loadReportList');
+            const reports = submittedReports.filter(r => r.reportData);
+
+            if (reports.length === 0) {
+                list.innerHTML = '<div class="payment-empty">No saved reports found.\n\nSave a report first using "Save Report File".</div>';
+            } else {
+                list.innerHTML = reports.map((report, idx) => {
+                    const realIdx = submittedReports.indexOf(report);
+                    const paid = report.paid ? '<span style="font-size:11px;color:var(--green);font-weight:700;">✓ PAID</span>' : '';
+                    return `
+                        <div class="payment-item" style="display:flex; align-items:stretch; padding:0; overflow:hidden; cursor:pointer;"
+                             onclick="selectReportToLoad(${realIdx})">
+                            <div style="flex:1; padding:12px 15px;">
+                                <div class="payment-customer-name">${report.companyName}</div>
+                                <div style="display:flex; gap:12px; align-items:center; margin-top:4px; flex-wrap:wrap;">
+                                    <span class="payment-date">${report.date}</span>
+                                    <span class="payment-report-num">#${report.reportNumber}</span>
+                                    <span class="payment-amount">${report.amount}</span>
+                                    ${paid}
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; padding:0 16px; color:var(--blue); font-size:20px;">›</div>
+                        </div>`;
+                }).join('');
+            }
+
+            document.getElementById('loadReportModal').classList.add('show');
+        }
+
+        function closeLoadReportModal() {
+            document.getElementById('loadReportModal').classList.remove('show');
+        }
+
+        function selectReportToLoad(index) {
+            const report = submittedReports[index];
+            if (!report || !report.reportData) {
+                showDialog('Not Available', 'No report data saved for this entry.');
+                return;
+            }
+            const doLoad = function() {
+                closeLoadReportModal();
+                loadReportData(report.reportData);
+            };
+            const currentReport = document.getElementById('reportNumber').value;
+            if (currentReport) {
+                showConfirm('Save Current Report?', 'Do you want to save the current report before loading a different one?', function() {
+                    saveReportInternally(doLoad);
+                }, doLoad);
+            } else {
+                doLoad();
+            }
+        }
+
+        function loadReportData(data) {
+            try {
+                // Clear current form
+                document.getElementById('expenseList').innerHTML = '';
+                receiptImages = {};
+                
+                // Restore report info (but NOT technician name - that persists separately)
+                if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                if (data.reportNumber) document.getElementById('reportNumber').value = data.reportNumber;
+                if (data.companyName) document.getElementById('companyName').value = data.companyName;
+                if (data.machineSerial !== undefined) document.getElementById('machineSerial').value = data.machineSerial || '';
+                if (data.serviceLocation) document.getElementById('serviceLocation').value = data.serviceLocation;
+                if (data.serviceDateFrom) document.getElementById('serviceDateFrom').value = data.serviceDateFrom;
+                if (data.serviceDateTo) document.getElementById('serviceDateTo').value = data.serviceDateTo;
+                // Backwards compatibility - if old format, set both dates
+                if (data.serviceDate && !data.serviceDateFrom) {
+                    document.getElementById('serviceDateFrom').value = data.serviceDate;
+                    document.getElementById('serviceDateTo').value = data.serviceDate;
+                }
+                // Reinit date picker with loaded dates
+                const _rdf = document.getElementById('serviceDateFrom').value;
+                const _rdt = document.getElementById('serviceDateTo').value;
+                initDatePicker(_rdf || null, _rdt || null);
+                if (data.milesDriven) document.getElementById('milesDriven').value = data.milesDriven;
+                if (data.mileageRate) document.getElementById('mileageRate').value = data.mileageRate;
+                if (data.cashAdvance) document.getElementById('cashAdvance').value = data.cashAdvance;
+                if (data.otherAdvance) document.getElementById('otherAdvance').value = data.otherAdvance;
+
+                // Restore receipt images
+                if (data.receiptImages) {
+                    receiptImages = data.receiptImages;
+                }
+
+                // Restore expenses with their original IDs
+                if (data.expenses && data.expenses.length > 0) {
+                    data.expenses.forEach((expense) => {
+                        // Use the saved ID if available, otherwise generate new one
+                        const expenseId = expense.id || Date.now() + Math.random();
+                        addExpenseWithId(expenseId);
+                        
+                        const entry = document.getElementById(`expense-${expenseId}`);
+                        if (entry) {
+                            if (expense.date) entry.querySelector('.expense-date').value = expense.date;
+                            if (expense.category) entry.querySelector('.expense-category').value = expense.category;
+                            if (expense.description) entry.querySelector('.expense-description').value = expense.description;
+                            if (expense.amount) entry.querySelector('.expense-amount').value = expense.amount;
+                        }
+                    });
+
+                    // Restore receipt image previews
+                    Object.keys(receiptImages).forEach(expenseId => {
+                        const preview = document.getElementById(`preview-${expenseId}`);
+                        if (preview && receiptImages[expenseId]) {
+                            const imageData = receiptImages[expenseId];
+                            
+                            // Image preview
+                            preview.innerHTML = `<img src="${imageData}" alt="Receipt" style="cursor: pointer;">`;
+                            preview.querySelector('img').addEventListener('click', function(e) {
+                                showReceiptModal(imageData, e);
+                            });
+                            
+                            // Both buttons for images
+                            const editBtn = document.getElementById(`edit-btn-${expenseId}`);
+                            const deleteBtn = document.getElementById(`delete-btn-${expenseId}`);
+                            if (editBtn) editBtn.style.display = 'inline-block';
+                            if (deleteBtn) deleteBtn.style.display = 'inline-block';
+                        }
+                    });
+                } else {
+                    addExpense();
+                }
+
+                calculateMileage();
+                calculateTotal();
+                resequenceExpenses();
+                
+                // Save to localStorage as well
+                saveData();
+                
+                showDialog('Success', 'Report loaded successfully!');
+            } catch (e) {
+                showDialog('Error', 'Failed to load report file:\n' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>
