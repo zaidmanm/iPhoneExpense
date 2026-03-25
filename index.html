@@ -3095,10 +3095,10 @@
             if (!reportNumber || !companyName) return;
 
             const cleanNum   = reportNumber.replace(/[^a-z0-9]/gi, '_');
-            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8);
+            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8).replace(/_+$/, '');
             const dateStr    = (serviceDateFrom || new Date().toISOString().split('T')[0]);
-            const fileName   = `${cleanNum}_${cleanCo}_ORICS.json`;
-            const pdfFileName = `${cleanNum}_${cleanCo}_ORICS.pdf`;
+            const fileName   = `${cleanNum}_${cleanCo}_Orics.json`;
+            const pdfFileName = `${cleanNum}_${cleanCo}_Orics.pdf`;
 
             // Store full report JSON (form + photos + PDF) in memory for JSON file save
             const reportFile = {
@@ -3133,9 +3133,9 @@
 
             const trackIdx = existingIndex >= 0 ? existingIndex : 0;
 
-            // Save PDF first via file picker, then save JSON report file
+            // Save PDF first via file picker, then silently overwrite JSON if already saved
             savePDFFile(pdfDataUri, pdfFileName, trackIdx, function() {
-                saveReportFile(reportFile, trackIdx);
+                saveReportFileSilent(reportFile, trackIdx);
             });
         }
 
@@ -3244,6 +3244,46 @@
         }
 
         // ── Save Report File ───────────────────────────────────────────────────────
+        // Silent JSON save — only overwrites if a handle was already stored; no dialog, no new picker
+        async function saveReportFileSilent(reportFile, trackingIndex) {
+            const json = JSON.stringify(reportFile, null, 2);
+            const reportNumber = reportFile.formData && reportFile.formData.reportNumber;
+            if (reportNumber && 'showSaveFilePicker' in window) {
+                try {
+                    const handle = await idbGet('rfh_' + reportNumber);
+                    if (handle) {
+                        const writable = await handle.createWritable();
+                        await writable.write(json);
+                        await writable.close();
+                        if (submittedReports[trackingIndex]) {
+                            const r = submittedReports[trackingIndex];
+                            setLocalFileStatus(r.reportNumber, true, r.hasPdfFile);
+                            r.hasFile = true;
+                            updatePaymentList();
+                        }
+                    }
+                    // If no stored handle, skip silently — user hasn't saved JSON yet
+                    return;
+                } catch(e) { console.warn('Silent JSON save failed:', e.message); }
+            }
+            // Mobile fallback: silent download, no dialog
+            try {
+                const blob = new Blob([json], { type: 'application/json' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href = url; a.download = reportFile.fileName;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                if (submittedReports[trackingIndex]) {
+                    const r = submittedReports[trackingIndex];
+                    setLocalFileStatus(r.reportNumber, true, r.hasPdfFile);
+                    r.hasFile = true;
+                    updatePaymentList();
+                }
+            } catch(e) { console.warn('Silent JSON download failed:', e.message); }
+        }
+
         async function saveReportFile(reportFile, trackingIndex) {
             const json     = JSON.stringify(reportFile, null, 2);
             const fileName = reportFile.fileName;
@@ -3271,6 +3311,9 @@
 
                     const fileHandle = await window.showSaveFilePicker(pickerOpts);
                     await idbPut('lastFile', fileHandle);
+                    // Remember handle for this report so future PDF exports can overwrite silently
+                    const rn = reportFile.formData && reportFile.formData.reportNumber;
+                    if (rn) await idbPut('rfh_' + rn, fileHandle);
 
                     // Also store directory handle for auto-open (resolve via showDirectoryPicker would
                     // require user gesture; instead we rely on startIn + manual open for first time)
@@ -3875,10 +3918,10 @@
             }
 
             const cleanNum   = reportNumber.replace(/[^a-z0-9]/gi, '_');
-            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8);
+            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8).replace(/_+$/, '');
             const dateStr    = document.getElementById('serviceDateFrom').value || new Date().toISOString().split('T')[0];
-            const fileName   = `${cleanNum}_${cleanCo}_ORICS.json`;
-            const pdfFileName = `${cleanNum}_${cleanCo}_ORICS.pdf`;
+            const fileName   = `${cleanNum}_${cleanCo}_Orics.json`;
+            const pdfFileName = `${cleanNum}_${cleanCo}_Orics.pdf`;
 
             const reportFile = {
                 fileVersion: '1.0',
