@@ -3096,6 +3096,7 @@
 
             const cleanNum   = reportNumber.replace(/[^a-z0-9]/gi, '_');
             const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8);
+            const dateStr    = (serviceDateFrom || new Date().toISOString().split('T')[0]);
             const fileName   = `${cleanNum}_${cleanCo}_ORICS.json`;
             const pdfFileName = `${cleanNum}_${cleanCo}_ORICS.pdf`;
 
@@ -3875,6 +3876,7 @@
 
             const cleanNum   = reportNumber.replace(/[^a-z0-9]/gi, '_');
             const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8);
+            const dateStr    = document.getElementById('serviceDateFrom').value || new Date().toISOString().split('T')[0];
             const fileName   = `${cleanNum}_${cleanCo}_ORICS.json`;
             const pdfFileName = `${cleanNum}_${cleanCo}_ORICS.pdf`;
 
