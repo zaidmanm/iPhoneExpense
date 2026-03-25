@@ -3,7 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Expense Report</title>
+    <title>ORICS Expenses</title>
+    <!-- PWA / Add to Home Screen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Expenses">
+    <meta name="theme-color" content="#0f1f3d">
+    <meta name="mobile-web-app-capable" content="yes">
+    <script>
+        // Generate 💸 emoji icon and inject PWA manifest at startup
+        (function() {
+            function makeEmojiIcon(size) {
+                const c = document.createElement('canvas');
+                c.width = c.height = size;
+                const ctx = c.getContext('2d');
+                // Navy rounded background
+                ctx.fillStyle = '#0f1f3d';
+                const r = size * 0.22;
+                ctx.beginPath();
+                ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
+                ctx.quadraticCurveTo(size, 0, size, r);
+                ctx.lineTo(size, size - r);
+                ctx.quadraticCurveTo(size, size, size - r, size);
+                ctx.lineTo(r, size);
+                ctx.quadraticCurveTo(0, size, 0, size - r);
+                ctx.lineTo(0, r);
+                ctx.quadraticCurveTo(0, 0, r, 0);
+                ctx.closePath();
+                ctx.fill();
+                // Emoji
+                ctx.font = `${size * 0.58}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('💸', size / 2, size * 0.54);
+                return c.toDataURL('image/png');
+            }
+            window.addEventListener('DOMContentLoaded', function() {
+                const icon180 = makeEmojiIcon(180);
+                const icon192 = makeEmojiIcon(192);
+                const icon512 = makeEmojiIcon(512);
+                // Apple touch icon
+                const link = document.createElement('link');
+                link.rel = 'apple-touch-icon';
+                link.href = icon180;
+                document.head.appendChild(link);
+                // Web app manifest
+                const manifest = {
+                    name: 'ORICS Expense Report',
+                    short_name: 'Expenses',
+                    start_url: window.location.href.split('?')[0],
+                    display: 'standalone',
+                    background_color: '#0f1f3d',
+                    theme_color: '#0f1f3d',
+                    icons: [
+                        { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+                        { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+                    ]
+                };
+                const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+                const mLink = document.createElement('link');
+                mLink.rel = 'manifest';
+                mLink.href = URL.createObjectURL(blob);
+                document.head.appendChild(mLink);
+            });
+        })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script async src="https://docs.opencv.org/4.5.2/opencv.js" onload="onOpenCvReady()"></script>
@@ -1156,7 +1220,10 @@
                 <h2>📂 Load Report</h2>
                 <button class="btn btn-secondary" onclick="closeLoadReportModal()">Close</button>
             </div>
-            <div id="loadReportList" style="margin-top:4px;">
+            <div style="padding: 10px 0 6px;">
+                <button class="btn btn-primary" style="width:100%; font-size:14px;" onclick="browseForReportFile()">📂 Browse for file…</button>
+            </div>
+            <div id="loadReportList" style="margin-top:8px;">
                 <div class="payment-empty">No saved reports found</div>
             </div>
         </div>
@@ -1785,8 +1852,8 @@
                 const reader = new FileReader();
                 
                 reader.onload = function(e) {
-                    // Compress to max 800px, JPEG 0.6 quality — keeps receipts readable, ~30-80KB
-                    compressImage(e.target.result, 600, 0.5, function(imageData) {
+                    // Compress to max 1800px, JPEG 0.88 quality — high quality, readable receipts
+                    compressImage(e.target.result, 1800, 0.88, function(imageData) {
                         receiptImages[expenseId] = imageData;
                         
                         const preview = document.getElementById(`preview-${expenseId}`);
@@ -1896,8 +1963,8 @@
                 ctx.rotate(degrees * Math.PI / 180);
                 ctx.drawImage(img, -img.width / 2, -img.height / 2);
                 
-                const rotatedRaw = canvas.toDataURL('image/jpeg', 0.9);
-                compressImage(rotatedRaw, 600, 0.5, function(rotatedImage) {
+                const rotatedRaw = canvas.toDataURL('image/jpeg', 0.95);
+                compressImage(rotatedRaw, 1800, 0.88, function(rotatedImage) {
                     cropImage.src = rotatedImage;
                     receiptImages[currentCropExpenseId] = rotatedImage;
                     
@@ -3840,6 +3907,13 @@
             saveSubmittedReports();
 
             saveReportFile(reportFile, existingIndex >= 0 ? existingIndex : 0);
+        }
+
+        function browseForReportFile() {
+            closeLoadReportModal();
+            openFileForAction(null, 'json', function(reportFile) {
+                loadReportData(reportFile.formData);
+            });
         }
 
         function openLoadReportModal() {
