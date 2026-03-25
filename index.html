@@ -3095,10 +3095,9 @@
             if (!reportNumber || !companyName) return;
 
             const cleanNum   = reportNumber.replace(/[^a-z0-9]/gi, '_');
-            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_');
-            const dateStr    = (serviceDateFrom || new Date().toISOString().split('T')[0]);
-            const fileName   = `ORICS_${cleanCo}_${cleanNum}_${dateStr}.json`;
-            const pdfFileName = `ORICS_${cleanCo}_${cleanNum}_${dateStr}.pdf`;
+            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8);
+            const fileName   = `${cleanNum}_${cleanCo}_ORICS.json`;
+            const pdfFileName = `${cleanNum}_${cleanCo}_ORICS.pdf`;
 
             // Store full report JSON (form + photos + PDF) in memory for JSON file save
             const reportFile = {
@@ -3875,10 +3874,9 @@
             }
 
             const cleanNum   = reportNumber.replace(/[^a-z0-9]/gi, '_');
-            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_');
-            const dateStr    = document.getElementById('serviceDateFrom').value || new Date().toISOString().split('T')[0];
-            const fileName   = `ORICS_${cleanCo}_${cleanNum}_${dateStr}.json`;
-            const pdfFileName = `ORICS_${cleanCo}_${cleanNum}_${dateStr}.pdf`;
+            const cleanCo    = companyName.replace(/[^a-z0-9]/gi, '_').substring(0, 8);
+            const fileName   = `${cleanNum}_${cleanCo}_ORICS.json`;
+            const pdfFileName = `${cleanNum}_${cleanCo}_ORICS.pdf`;
 
             const reportFile = {
                 fileVersion: '1.0',
