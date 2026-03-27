@@ -1741,6 +1741,20 @@
             calculateTotal();
         }
 
+        function sortExpensesByCategory() {
+            const list = document.getElementById('expenseList');
+            const entries = Array.from(list.querySelectorAll('.expense-entry'));
+            entries.sort((a, b) => {
+                const catA = a.querySelector('.expense-category').value;
+                const catB = b.querySelector('.expense-category').value;
+                const dateA = a.querySelector('.expense-date').value;
+                const dateB = b.querySelector('.expense-date').value;
+                return catA.localeCompare(catB) || dateA.localeCompare(dateB);
+            });
+            entries.forEach(e => list.appendChild(e));
+            resequenceExpenses();
+        }
+
         function resequenceExpenses() {
             const entries = document.querySelectorAll('.expense-entry');
             entries.forEach((entry, index) => {
@@ -3266,22 +3280,8 @@
                     return;
                 } catch(e) { console.warn('Silent JSON save failed:', e.message); }
             }
-            // Mobile fallback: silent download, no dialog
-            try {
-                const blob = new Blob([json], { type: 'application/json' });
-                const url  = URL.createObjectURL(blob);
-                const a    = document.createElement('a');
-                a.href = url; a.download = reportFile.fileName;
-                document.body.appendChild(a); a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                if (submittedReports[trackingIndex]) {
-                    const r = submittedReports[trackingIndex];
-                    setLocalFileStatus(r.reportNumber, true, r.hasPdfFile);
-                    r.hasFile = true;
-                    updatePaymentList();
-                }
-            } catch(e) { console.warn('Silent JSON download failed:', e.message); }
+            // Mobile: no file handle API, skip silently — user can save JSON manually
+            return;
         }
 
         async function saveReportFile(reportFile, trackingIndex) {
@@ -3686,46 +3686,83 @@
                 yPos = doc.lastAutoTable.finalY + 10;
             }
 
-            // Other Expenses Section
-            const expenseData = [];
-            const expenseEntries = document.querySelectorAll('.expense-entry');
-            
-            let expenseSeq = 0;
-            expenseEntries.forEach(entry => {
-                const date = entry.querySelector('.expense-date').value;
+            // Sort expense entries in the UI by category then date before generating
+            sortExpensesByCategory();
+
+            // Other Expenses Section — sorted by category+date with subtotals
+            const rawExpenses = [];
+            document.querySelectorAll('.expense-entry').forEach(entry => {
+                const date     = entry.querySelector('.expense-date').value;
                 const category = entry.querySelector('.expense-category').value;
-                const description = entry.querySelector('.expense-description').value;
-                const amount = parseFloat(entry.querySelector('.expense-amount').value) || 0;
-                
-                if (amount > 0 || description) {
-                    expenseSeq++;
-                    expenseData.push([
-                        expenseSeq,
-                        new Date(date).toLocaleDateString(),
-                        category,
-                        description || '-',
-                        `$${amount.toFixed(2)}`
-                    ]);
-                }
+                const desc     = entry.querySelector('.expense-description').value;
+                const amount   = parseFloat(entry.querySelector('.expense-amount').value) || 0;
+                const eid      = entry.id.replace('expense-', '');
+                if (amount > 0 || desc) rawExpenses.push({ date, category, desc, amount, eid });
             });
 
-            if (expenseData.length > 0) {
-                doc.setFontSize(12);
+            // Sort by category then date — must match UI sort order
+            rawExpenses.sort((a, b) =>
+                a.category.localeCompare(b.category) || a.date.localeCompare(b.date)
+            );
+
+            // Build sorted seq map for receipt labeling (declared here so receipts section can use it)
+            const sortedSeqMap = {};
+            rawExpenses.forEach((e, idx) => { sortedSeqMap[e.eid] = idx + 1; });
+
+            if (rawExpenses.length > 0) {
+                // Build rows with inline subtotals; track which row indices are subtotals
+                const expenseBody = [];
+                const subtotalRows = new Set();
+                let seq = 0, i = 0;
+                while (i < rawExpenses.length) {
+                    const cat = rawExpenses[i].category;
+                    let catTotal = 0;
+                    while (i < rawExpenses.length && rawExpenses[i].category === cat) {
+                        seq++;
+                        catTotal += rawExpenses[i].amount;
+                        expenseBody.push([
+                            seq,
+                            new Date(rawExpenses[i].date).toLocaleDateString(),
+                            rawExpenses[i].category,
+                            rawExpenses[i].desc || '—',
+                            `$${rawExpenses[i].amount.toFixed(2)}`
+                        ]);
+                        i++;
+                    }
+                    subtotalRows.add(expenseBody.length); // next row = subtotal
+                    expenseBody.push(['', '', '', `${cat} Subtotal`, `$${catTotal.toFixed(2)}`]);
+                }
+
+                doc.setFontSize(11);
                 doc.setFont(undefined, 'bold');
                 doc.text('OTHER EXPENSES', 20, yPos);
-                yPos += 8;
+                yPos += 6;
 
                 doc.autoTable({
                     startY: yPos,
                     head: [['#', 'Date', 'Category', 'Description', 'Amount']],
-                    body: expenseData,
+                    body: expenseBody,
                     theme: 'grid',
-                    headStyles: { fillColor: [26, 35, 126] },
-                    columnStyles: { 0: { cellWidth: 10, halign: 'center' } },
-                    margin: { left: 20, right: 20 }
+                    headStyles: { fillColor: [26, 35, 126], fontSize: 8, cellPadding: 2 },
+                    styles: { fontSize: 8, cellPadding: 1.8 },
+                    columnStyles: {
+                        0: { cellWidth: 8,  halign: 'center' },
+                        1: { cellWidth: 22 },
+                        2: { cellWidth: 30 },
+                        3: { cellWidth: 'auto' },
+                        4: { cellWidth: 22, halign: 'right' }
+                    },
+                    margin: { left: 20, right: 20 },
+                    didParseCell: function(data) {
+                        if (data.section === 'body' && subtotalRows.has(data.row.index)) {
+                            data.cell.styles.fontStyle = 'bold';
+                            data.cell.styles.fillColor = [235, 240, 255];
+                            data.cell.styles.textColor = [26, 35, 126];
+                        }
+                    }
                 });
 
-                yPos = doc.lastAutoTable.finalY + 10;
+                yPos = doc.lastAutoTable.finalY + 8;
             }
 
             // Advances Section
@@ -3764,11 +3801,11 @@
                 yPos = doc.lastAutoTable.finalY + 10;
             }
 
-            // Total - MOVED BEFORE RECEIPT IMAGES
+            // Total — no forced page break, always follows table directly
             const totalAmount = document.getElementById('totalAmount').textContent;
             
-            // Check if we need a new page for the total
-            if (yPos > 250) {
+            // Only start new page if really no room at all
+            if (yPos > 272) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -3807,21 +3844,20 @@
                 const spacing = 10;
                 let maxHeightInRow = 0; // Track tallest image in current row
 
-                // Build a map of expenseId -> sequence number (only counting expenses with data)
-                const expenseSeqMap = {};
-                let seqCounter = 0;
-                document.querySelectorAll('.expense-entry').forEach(entry => {
-                    const amt = parseFloat(entry.querySelector('.expense-amount').value) || 0;
-                    const desc = entry.querySelector('.expense-description').value;
-                    if (amt > 0 || desc) {
-                        seqCounter++;
-                        const eid = entry.id.replace('expense-', '');
-                        expenseSeqMap[eid] = seqCounter;
-                    }
+                // Build a map of expenseId -> sequence number using the sorted order
+                const expenseSeqMap = sortedSeqMap || {};
+
+                // Process receipts in sorted order
+                const sortedReceiptIds = rawExpenses
+                    .map(e => e.eid)
+                    .filter(eid => receiptImages[eid]);
+                // Also include any receipt ids not in rawExpenses (shouldn't happen, but safety)
+                Object.keys(receiptImages).forEach(eid => {
+                    if (!sortedReceiptIds.includes(eid)) sortedReceiptIds.push(eid);
                 });
 
                 // Process receipts sequentially to handle async PDF conversions
-                for (const expenseId of receiptIds) {
+                for (const expenseId of sortedReceiptIds) {
                     if (receiptImages[expenseId]) {
                         // Get the expense details for labeling
                         const expenseEntry = document.getElementById(`expense-${expenseId}`);
