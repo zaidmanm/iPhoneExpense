@@ -1681,6 +1681,7 @@
 
                 calculateMileage();
                 calculateTotal();
+                sortExpensesByCategory();
             } catch (e) {
                 console.error('Failed to load saved data:', e);
                 addExpense();
@@ -4126,6 +4127,7 @@
                 calculateMileage();
                 calculateTotal();
                 resequenceExpenses();
+                sortExpensesByCategory();
                 
                 // Save to localStorage as well
                 saveData();
