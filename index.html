@@ -342,23 +342,46 @@
         #mileageTotal { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
 
         /* ── Expense List ─────────────────────────────── */
-        .expense-list { display: flex; flex-direction: column; gap: 10px; }
+        .expense-list { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
 
         /* ── Expense Entry ────────────────────────────── */
         .expense-entry {
             background: var(--surface-2);
             border: 1.5px solid var(--border);
             border-radius: var(--r);
-            padding: 14px 14px 12px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-            gap: 10px;
-            align-items: end;
+            padding: 14px 12px;
             transition: border-color 0.15s, box-shadow 0.15s;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow: hidden;
+            box-sizing: border-box;
+            width: 100%;
         }
         .expense-entry:hover { border-color: var(--amber); box-shadow: var(--sh-sm); }
-        .expense-entry .form-group { margin: 0; gap: 4px; }
+
+        .expense-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            min-width: 0;
+        }
+        @media (min-width: 600px) {
+            .expense-fields { grid-template-columns: repeat(4, 1fr); }
+        }
+        .expense-entry .form-group { margin: 0; gap: 4px; min-width: 0; }
+        .expense-entry input, .expense-entry select {
+            min-width: 0; width: 100%; box-sizing: border-box;
+        }
+
+        .expense-btns { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .expense-btns-row { display: flex; gap: 6px; min-width: 0; }
+        .expense-btns-row .btn {
+            flex: 1; min-width: 0;
+            font-size: 11px; padding: 8px 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
 
         .expense-seq-num {
             position: absolute; top: 0; right: 0;
@@ -371,16 +394,18 @@
         }
 
         /* ── Receipt ──────────────────────────────────── */
-        .receipt-buttons { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
-        .receipt-preview { margin-top: 5px; }
+        .receipt-preview { min-width: 0; }
         .receipt-preview img {
-            max-width: 82px; max-height: 82px;
+            width: 168px; height: 168px;
+            max-width: 100%;
+            object-fit: contain;
+            background: var(--surface-3);
             border-radius: var(--r-sm);
             border: 1.5px solid var(--border);
-            cursor: pointer;
+            cursor: pointer; display: block;
             transition: transform 0.15s;
         }
-        .receipt-preview img:hover { transform: scale(1.06); }
+        .receipt-preview img:hover { transform: scale(1.03); }
 
         /* ── Add Expense Button ───────────────────────── */
         .add-expense-btn {
@@ -1476,51 +1501,57 @@
         function addExpenseWithId(expenseId) {
             const expenseHTML = `
                 <div class="expense-entry" id="expense-${expenseId}">
-                    <div class="form-group" style="position: relative;">
-                        <label>Date</label>
-                        <input type="date" class="expense-date" required>
-                        <span class="expense-seq-num" style="position: absolute; top: 0; right: 0; background: #1a237e; color: white; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 10px; line-height: 1.6;">-</span>
+                    <span class="expense-seq-num">-</span>
+
+                    <!-- Fields: 2-col mobile, 4-col desktop -->
+                    <div class="expense-fields">
+                        <div class="form-group" style="position:relative;">
+                            <label>Date</label>
+                            <input type="date" class="expense-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select class="expense-category">
+                                <option value="Hotel">Hotel</option>
+                                <option value="Meals">Meals</option>
+                                <option value="Car Rental">Car Rental</option>
+                                <option value="Airfare">Airfare</option>
+                                <option value="Gas/Fuel">Gas/Fuel</option>
+                                <option value="Parking">Parking</option>
+                                <option value="Tolls">Tolls</option>
+                                <option value="Taxi/Uber">Taxi/Uber</option>
+                                <option value="Office Supplies">Office Supplies</option>
+                                <option value="Internet/Phone">Internet/Phone</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <input type="text" class="expense-description" placeholder="Brief description">
+                        </div>
+                        <div class="form-group">
+                            <label>Amount ($)</label>
+                            <input type="number" class="expense-amount" placeholder="0.00" step="0.01" min="0" oninput="calculateTotal()">
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select class="expense-category">
-                            <option value="Hotel">Hotel</option>
-                            <option value="Meals">Meals</option>
-                            <option value="Car Rental">Car Rental</option>
-                            <option value="Airfare">Airfare</option>
-                            <option value="Gas/Fuel">Gas/Fuel</option>
-                            <option value="Parking">Parking</option>
-                            <option value="Tolls">Tolls</option>
-                            <option value="Taxi/Uber">Taxi/Uber</option>
-                            <option value="Office Supplies">Office Supplies</option>
-                            <option value="Internet/Phone">Internet/Phone</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <input type="text" class="expense-description" placeholder="Brief description">
-                    </div>
-                    <div class="form-group">
-                        <label>Amount ($)</label>
-                        <input type="number" class="expense-amount" placeholder="0.00" step="0.01" min="0" oninput="calculateTotal()">
-                    </div>
-                    <div class="form-group">
-                        <label>Receipt Photo</label>
-                        <div class="receipt-buttons">
+
+                    <!-- Buttons: two rows -->
+                    <div class="expense-btns">
+                        <div class="expense-btns-row">
                             <button class="btn btn-secondary btn-small" onclick="triggerCamera(${expenseId}, event)">📷 Camera</button>
                             <button class="btn btn-secondary btn-small" onclick="triggerGallery(${expenseId}, event)">🖼️ Gallery</button>
                             <button class="btn btn-secondary btn-small" id="edit-btn-${expenseId}" style="display:none;" onclick="openCropModal(${expenseId}, event)">✏️ Edit</button>
-                            <button class="btn btn-danger btn-small" id="delete-btn-${expenseId}" style="display:none;" onclick="deleteReceipt(${expenseId}, event)">🗑️ Delete Photo</button>
                         </div>
-                        <input type="file" id="file-camera-${expenseId}" class="expense-receipt" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
-                        <input type="file" id="file-gallery-${expenseId}" class="expense-receipt" accept="image/*" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
-                        <div class="receipt-preview" id="preview-${expenseId}"></div>
+                        <div class="expense-btns-row">
+                            <button class="btn btn-danger btn-small" id="delete-btn-${expenseId}" style="display:none;" onclick="deleteReceipt(${expenseId}, event)">🗑️ Delete Photo</button>
+                            <button class="btn btn-danger btn-small" onclick="removeExpense(${expenseId})">✕ Remove Expense</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label style="opacity: 0;">Action</label>
-                        <button class="btn btn-danger" onclick="removeExpense(${expenseId})">Remove Expense</button>
-                    </div>
+
+                    <!-- Photo preview -->
+                    <input type="file" id="file-camera-${expenseId}" class="expense-receipt" accept="image/*" capture="environment" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
+                    <input type="file" id="file-gallery-${expenseId}" class="expense-receipt" accept="image/*" style="display:none;" onchange="handleReceiptUpload(this, ${expenseId})">
+                    <div class="receipt-preview" id="preview-${expenseId}"></div>
                 </div>
             `;
             document.getElementById('expenseList').insertAdjacentHTML('beforeend', expenseHTML);
