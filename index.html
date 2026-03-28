@@ -495,24 +495,7 @@
             margin-bottom: 12px;
         }
 
-        /* ── Payment Tracking Button ──────────────────── */
-        #paymentTrackingBtn {
-            width: 100%;
-            padding: 16px 20px;
-            background: var(--coal);
-            color: white;
-            border: none;
-            border-radius: var(--r-lg);
-            font-family: 'Outfit', sans-serif;
-            font-size: 14px; font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        #paymentTrackingBtn:hover { background: var(--void); box-shadow: var(--sh); transform: translateY(-1px); }
-        #paymentTrackingBtn.all-paid { background: var(--green); }
-        #paymentTrackingBtn.all-paid:hover { background: #15803d; }
+        /* ── Payment Tracking Button (legacy compat) ──── */
 
         /* ── Sync / Backup Bar ────────────────────────── */
         .backup-bar {
@@ -649,6 +632,94 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 99px; }
+
+        /* ── Merged Summary Card ──────────────────────── */
+        .summary-card {
+            background: var(--void);
+            border-radius: var(--r-lg);
+            margin-bottom: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        .summary-card-accent {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+            background: linear-gradient(180deg, var(--amber-lt), var(--amber));
+        }
+        .summary-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 20px 12px 20px;
+        }
+        .summary-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 0 0; }
+        .summary-bottom {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 20px; cursor: pointer; border: none;
+            background: none; width: 100%; font-family: 'Outfit', sans-serif;
+            transition: background 0.15s; text-align: left;
+        }
+        .summary-bottom:hover { background: rgba(255,255,255,0.04); }
+        .summary-bottom.all-paid { background: rgba(22,163,74,0.15); }
+
+        /* ── Email Modal ──────────────────────────────── */
+        .email-modal { display: none; position: fixed; z-index: 3000; inset: 0; background: rgba(0,0,0,0.65); align-items: flex-end; justify-content: center; }
+        .email-modal.show { display: flex; }
+        .email-modal-box {
+            background: var(--surface); border-radius: var(--r-xl) var(--r-xl) 0 0;
+            padding: 0; max-width: 520px; width: 100%;
+            box-shadow: var(--sh-lg); max-height: 88vh; display: flex; flex-direction: column;
+        }
+        .email-modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .email-modal-header h2 { font-size: 17px; font-weight: 700; color: var(--void); margin: 0; }
+        .email-modal-body { overflow-y: auto; flex: 1; padding: 12px; }
+        .email-modal-footer {
+            padding: 12px 16px; border-top: 1px solid var(--border);
+            display: flex; gap: 10px; flex-shrink: 0;
+        }
+        .email-report-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 12px; border-radius: var(--r);
+            border: 1.5px solid var(--border);
+            margin-bottom: 7px; cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+            background: var(--surface);
+        }
+        .email-report-item:hover { background: var(--surface-2); }
+        .email-report-item.selected { border-color: var(--amber); background: var(--amber-pale); }
+        .email-report-item.no-pdf { opacity: 0.45; cursor: not-allowed; }
+        .email-check {
+            width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-2);
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; transition: all 0.15s;
+        }
+        .email-report-item.selected .email-check {
+            background: var(--amber); border-color: var(--amber); color: white;
+        }
+        .email-report-info { flex: 1; min-width: 0; }
+        .email-report-name { font-size: 14px; font-weight: 700; color: var(--void); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .email-report-meta { font-size: 11px; color: var(--ash); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+        .email-pdf-badge {
+            font-size: 9px; font-weight: 700; letter-spacing: 0.5px;
+            padding: 3px 7px; border-radius: 99px; flex-shrink: 0;
+        }
+        .email-pdf-badge.ready { background: var(--green-pale); color: var(--green); }
+        .email-pdf-badge.missing { background: var(--red-pale); color: var(--red); }
+        .email-select-all-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 4px 10px; font-size: 12px; color: var(--ash);
+        }
+        .email-select-all-row button {
+            background: none; border: none; color: var(--amber); font-size: 12px;
+            font-weight: 700; font-family: 'Outfit', sans-serif; cursor: pointer; padding: 0;
+        }
+        .email-hint {
+            font-size: 11px; color: var(--ash); text-align: center;
+            padding: 8px 12px; background: var(--surface-2);
+            border-radius: var(--r-sm); border: 1px solid var(--border);
+            margin-bottom: 10px; line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -744,14 +815,26 @@
         <!-- ╔══ TAB 3: SUBMIT ══╗ -->
         <div class="tab-panel" id="tab-submit">
 
-            <!-- This Report Total -->
-            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--void);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:12px;position:relative;overflow:hidden;">
-                <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--amber-lt),var(--amber));"></div>
-                <div>
-                    <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:4px;">This Report</div>
-                    <div id="totalAmount" style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--amber-lt);letter-spacing:-0.5px;">$0.00</div>
+            <!-- Merged Summary Card -->
+            <div class="summary-card">
+                <div class="summary-card-accent"></div>
+                <!-- Top: This Report -->
+                <div class="summary-top">
+                    <div>
+                        <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:4px;">This Report</div>
+                        <div id="totalAmount" style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--amber-lt);letter-spacing:-0.5px;">$0.00</div>
+                    </div>
+                    <div style="font-size:30px;opacity:0.1;">💰</div>
                 </div>
-                <div style="font-size:32px;opacity:0.12;">💰</div>
+                <div class="summary-divider"></div>
+                <!-- Bottom: Total Owed — tap to open payment tracking -->
+                <button class="summary-bottom" id="paymentTrackingBtn" onclick="openPaymentTracking()">
+                    <div>
+                        <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:3px;">Total Expenses Due</div>
+                        <span id="paymentTrackingAmount" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--amber-lt);">$0.00 Owed</span>
+                        <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:3px;letter-spacing:0.3px;">Tap to track payments ›</div>
+                    </div>
+                </button>
             </div>
 
             <!-- Advances -->
@@ -783,17 +866,10 @@
                 <button class="btn btn-primary" onclick="exportToFile()">💾 Save</button>
                 <button class="btn btn-primary" onclick="openLoadReportModal()">📂 Load</button>
                 <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear</button>
+                <button class="btn btn-secondary" onclick="openEmailModal()" style="grid-column:1/-1; border-color:var(--blue); color:var(--blue);">
+                    ✉️ Email Reports…
+                </button>
             </div>
-
-            <!-- Payment Tracking Button -->
-            <button id="paymentTrackingBtn" onclick="openPaymentTracking()">
-                <div>
-                    <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:3px;">Total Expenses Due</div>
-                    <span id="paymentTrackingAmount" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--amber-lt);">$0.00 Owed</span>
-                    <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:4px;letter-spacing:0.3px;">Press to track payments</div>
-                </div>
-                <span style="color:rgba(255,255,255,0.3);font-size:22px;">›</span>
-            </button>
 
             <!-- Sync Bar -->
             <div class="backup-bar">
@@ -973,6 +1049,34 @@
             
             <div class="payment-list" id="paymentList">
                 <div class="payment-empty">No reports submitted yet</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Reports Modal -->
+    <div class="email-modal" id="emailModal" onclick="if(event.target===this)closeEmailModal()">
+        <div class="email-modal-box">
+            <div class="email-modal-header">
+                <h2>✉️ Email Reports</h2>
+                <button class="btn btn-secondary btn-small" onclick="closeEmailModal()">Close</button>
+            </div>
+            <div class="email-modal-body">
+                <div class="email-hint" id="emailHint">
+                    📱 On mobile, tapping Send opens the native share sheet — pick Mail, Messages, or any app to attach PDFs directly.<br>
+                    🖥 On desktop, PDFs download and your mail app opens with the subject pre-filled.
+                </div>
+                <div class="email-select-all-row">
+                    <span id="emailSelCount">0 selected</span>
+                    <div style="display:flex;gap:12px;">
+                        <button onclick="emailSelectAll()">Select All</button>
+                        <button onclick="emailSelectNone()">None</button>
+                    </div>
+                </div>
+                <div id="emailReportList"></div>
+            </div>
+            <div class="email-modal-footer">
+                <button class="btn btn-secondary" style="flex:1;" onclick="closeEmailModal()">Cancel</button>
+                <button class="btn btn-primary" style="flex:2;" onclick="emailSelectedReports()">✉️ Send Selected</button>
             </div>
         </div>
     </div>
@@ -2883,10 +2987,176 @@
 
             const trackIdx = existingIndex >= 0 ? existingIndex : 0;
 
+            // Store PDF blob in IndexedDB for later email use
+            if (pdfDataUri) {
+                try {
+                    const base64  = pdfDataUri.split(',')[1];
+                    const binary  = atob(base64);
+                    const bytes   = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                    const pdfBlob = new Blob([bytes], { type: 'application/pdf' });
+                    idbPut('pdf_' + reportNumber, pdfBlob);
+                } catch(e) { console.warn('Could not store PDF in IDB:', e); }
+            }
+
             // Save PDF first via file picker, then silently overwrite JSON if already saved
             savePDFFile(pdfDataUri, pdfFileName, trackIdx, function() {
                 saveReportFileSilent(reportFile, trackIdx);
             });
+        }
+
+        // ── Email Reports ──────────────────────────────────────────────────────────
+
+        let emailPdfAvailability = {}; // cache: reportNumber -> bool
+
+        async function openEmailModal() {
+            if (submittedReports.length === 0) {
+                showDialog('No Reports', 'No reports found. Export a PDF first to make reports available for emailing.');
+                return;
+            }
+            document.getElementById('emailModal').classList.add('show');
+            await buildEmailReportList();
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').classList.remove('show');
+        }
+
+        async function buildEmailReportList() {
+            const listEl = document.getElementById('emailReportList');
+            listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--ash);font-size:13px;">Checking PDF availability…</div>';
+            emailPdfAvailability = {};
+
+            // Check IDB availability for each report
+            for (const report of submittedReports) {
+                try {
+                    const blob = await idbGet('pdf_' + report.reportNumber);
+                    emailPdfAvailability[report.reportNumber] = !!(blob && blob.size > 0);
+                } catch(e) {
+                    emailPdfAvailability[report.reportNumber] = false;
+                }
+            }
+
+            let html = '';
+            submittedReports.forEach((report, idx) => {
+                const hasPdf = emailPdfAvailability[report.reportNumber];
+                const paidLabel = report.paid ? ' · ✓ Paid' : '';
+                html += `
+                    <div class="email-report-item${hasPdf ? '' : ' no-pdf'}" id="email-item-${idx}"
+                         onclick="${hasPdf ? `toggleEmailItem(${idx})` : "showDialog('No PDF','This report\\'s PDF was not stored in this browser session. Re-export the PDF first.')"}">
+                        <div class="email-check" id="email-check-${idx}"></div>
+                        <div class="email-report-info">
+                            <div class="email-report-name">${report.companyName}</div>
+                            <div class="email-report-meta">#${report.reportNumber} · ${report.date} · ${report.amount}${paidLabel}</div>
+                        </div>
+                        <span class="email-pdf-badge ${hasPdf ? 'ready' : 'missing'}">${hasPdf ? 'PDF ✓' : 'No PDF'}</span>
+                    </div>`;
+            });
+            listEl.innerHTML = html;
+            updateEmailSelCount();
+        }
+
+        function toggleEmailItem(idx) {
+            const item  = document.getElementById('email-item-' + idx);
+            const check = document.getElementById('email-check-' + idx);
+            if (!item) return;
+            const selected = item.classList.toggle('selected');
+            check.textContent = selected ? '✓' : '';
+            updateEmailSelCount();
+        }
+
+        function emailSelectAll() {
+            submittedReports.forEach((r, idx) => {
+                if (!emailPdfAvailability[r.reportNumber]) return;
+                const item  = document.getElementById('email-item-' + idx);
+                const check = document.getElementById('email-check-' + idx);
+                if (item) { item.classList.add('selected'); check.textContent = '✓'; }
+            });
+            updateEmailSelCount();
+        }
+
+        function emailSelectNone() {
+            submittedReports.forEach((r, idx) => {
+                const item  = document.getElementById('email-item-' + idx);
+                const check = document.getElementById('email-check-' + idx);
+                if (item) { item.classList.remove('selected'); check.textContent = ''; }
+            });
+            updateEmailSelCount();
+        }
+
+        function updateEmailSelCount() {
+            const count = document.querySelectorAll('.email-report-item.selected').length;
+            document.getElementById('emailSelCount').textContent = count === 1 ? '1 selected' : `${count} selected`;
+        }
+
+        async function emailSelectedReports() {
+            const selected = [];
+            submittedReports.forEach((report, idx) => {
+                const item = document.getElementById('email-item-' + idx);
+                if (item && item.classList.contains('selected')) selected.push(report);
+            });
+
+            if (selected.length === 0) {
+                showDialog('Nothing Selected', 'Please select at least one report to email.');
+                return;
+            }
+
+            // Gather blobs from IDB
+            const files = [];
+            const missing = [];
+            for (const report of selected) {
+                try {
+                    const blob = await idbGet('pdf_' + report.reportNumber);
+                    if (blob && blob.size > 0) {
+                        files.push(new File([blob], report.pdfFileName || `Report_${report.reportNumber}.pdf`, { type: 'application/pdf' }));
+                    } else {
+                        missing.push(report.reportNumber);
+                    }
+                } catch(e) { missing.push(report.reportNumber); }
+            }
+
+            if (missing.length > 0 && files.length === 0) {
+                showDialog('PDFs Not Found', `Could not find PDFs for report(s): ${missing.join(', ')}.\n\nPlease re-export those reports as PDF first, then try again.`);
+                return;
+            }
+
+            const companies = [...new Set(selected.map(r => r.companyName))].join(', ');
+            const subject   = `ORICS Expense Report – ${companies}`;
+            const body      = `Hi,\n\nPlease find the attached ORICS expense report(s) for: ${companies}.\n\nTotal: ${selected.map(r => `${r.companyName} ${r.amount}`).join(', ')}.\n\nThank you.`;
+
+            closeEmailModal();
+
+            // Mobile: native share sheet with file attachments
+            if (files.length > 0 && navigator.canShare && navigator.canShare({ files })) {
+                try {
+                    await navigator.share({ files, title: subject, text: body });
+                    return;
+                } catch(e) {
+                    if (e.name === 'AbortError') return; // user cancelled
+                    console.warn('navigator.share failed, falling back:', e);
+                }
+            }
+
+            // Desktop / fallback: download PDFs + open mailto
+            for (const file of files) {
+                const url = URL.createObjectURL(file);
+                const a   = document.createElement('a');
+                a.href = url; a.download = file.name;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+            }
+
+            // Small delay so downloads start, then open mail client
+            setTimeout(() => {
+                const mailtoUri = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                window.location.href = mailtoUri;
+                if (missing.length > 0) {
+                    setTimeout(() => {
+                        showDialog('Partial Success', `${files.length} PDF(s) downloaded.\n\nCould not find PDF for report(s): ${missing.join(', ')}. Re-export those first.`);
+                    }, 800);
+                }
+            }, 600);
         }
 
         // ── IndexedDB: persist FileSystemDirectoryHandle across sessions ──────────
