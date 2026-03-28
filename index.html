@@ -594,17 +594,87 @@
         .payment-summary { display: flex; align-items: center; justify-content: space-between; padding: 11px 20px; background: var(--amber-pale); border-bottom: 1.5px solid var(--amber-dim); font-size: 13px; font-weight: 600; color: var(--amber); }
         .payment-list { flex: 1; overflow-y: auto; padding: 10px 12px; }
         .payment-empty { text-align: center; padding: 40px 20px; color: var(--ash); font-size: 14px; }
-        .payment-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--r); margin-bottom: 8px; overflow: hidden; display: flex; align-items: stretch; transition: border-color 0.15s; }
-        .payment-item.paid { opacity: 0.5; }
-        .payment-item.paid .payment-customer-name { text-decoration: line-through; }
-        .payment-customer-name { font-size: 14px; font-weight: 700; color: var(--void); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .payment-date { font-size: 10px; color: var(--ash); font-family: 'JetBrains Mono', monospace; }
+
+        /* Card row */
+        .payment-item {
+            border-radius: var(--r-lg);
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            margin-bottom: 8px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: var(--sh-sm);
+            transition: border-color 0.22s, box-shadow 0.22s;
+            cursor: pointer;
+        }
+        .payment-item.open {
+            border-color: var(--amber);
+            box-shadow: var(--sh);
+        }
+        .payment-item.paid { opacity: 0.6; }
+        .payment-item.paid .pi-name { text-decoration: line-through; }
+
+        /*
+         * Track is 150% wide.
+         *   Text panel  = 50% of track = 75% of container  (visible at rest)
+         *   Button panel = 50% of track = 75% of container  (slides in)
+         * At rest   translateX(0)      → text(75%) + button-peek(25%)
+         * At open   translateX(-33.33%)→ text tail(25%) + buttons(75%)
+         * translateX % is relative to track itself (1.5× container),
+         * so -33.33% of 1.5C = -0.5C which shifts by half the container width.
+         */
+        .payment-item-track {
+            display: flex;
+            align-items: stretch;
+            width: 150%;
+            transform: translateX(0);
+            transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .payment-item.open .payment-item-track { transform: translateX(-33.33%); }
+
+        /* Text panel — 50% of track = 75% of container */
+        .payment-item-text {
+            flex: 0 0 50%;
+            min-width: 0;
+            padding: 13px 16px 12px;
+            /* Soft right fade to hint buttons behind */
+            -webkit-mask: linear-gradient(to right, black 70%, transparent 100%);
+                    mask: linear-gradient(to right, black 70%, transparent 100%);
+            transition: -webkit-mask 0.32s, mask 0.32s;
+        }
+        /* When open: no fade needed on text (it slides mostly out of view) */
+        .payment-item.open .payment-item-text {
+            -webkit-mask: none; mask: none;
+        }
+        .pi-name {
+            font-size: 14px; font-weight: 700; color: var(--void);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pi-meta {
+            display: flex; gap: 7px; align-items: center; margin-top: 3px; flex-wrap: nowrap;
+        }
+        .payment-date   { font-size: 10px; color: var(--ash); font-family: 'JetBrains Mono', monospace; }
         .payment-report-num { font-size: 10px; color: var(--ash); font-family: 'JetBrains Mono', monospace; }
         .payment-amount { font-size: 12px; font-weight: 700; color: var(--void); font-family: 'JetBrains Mono', monospace; }
-        .payment-action-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 0 12px; background: none; border: none; border-left: 1px solid var(--border); cursor: pointer; font-size: 8px; font-weight: 800; font-family: 'Outfit', sans-serif; color: var(--ash); letter-spacing: 0.5px; text-transform: uppercase; transition: background 0.15s; min-width: 52px; }
-        .payment-action-btn:hover { background: var(--surface-2); }
-        .payment-check-btn { display: flex; align-items: center; justify-content: center; padding: 0 14px; border-left: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
-        .payment-check-btn:hover { background: var(--green-pale); }
+
+        /* Button panel — 50% of track = 75% of container */
+        .payment-item-btns {
+            flex: 0 0 50%;
+            display: flex;
+            border-left: 1px solid var(--border);
+        }
+        .payment-action-btn {
+            flex: 1;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 3px; padding: 8px 4px;
+            background: none; border: none; border-left: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 8px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
+            font-family: 'Outfit', sans-serif; color: var(--ash);
+            transition: background 0.14s, transform 0.1s;
+        }
+        .payment-action-btn:first-child { border-left: none; }
+        .payment-action-btn:active { background: var(--surface-2); transform: scale(0.95); }
 
         /* ── Custom Dialog ────────────────────────────── */
         .custom-dialog-overlay { display: none; position: fixed; z-index: 20000; inset: 0; background: rgba(0,0,0,0.65); align-items: center; justify-content: center; padding: 20px; }
@@ -815,31 +885,29 @@
         <!-- ╔══ TAB 3: SUBMIT ══╗ -->
         <div class="tab-panel" id="tab-submit">
 
-            <!-- Merged Summary Card -->
-            <div class="summary-card">
+            <!-- Merged Summary Card — entire card is one button -->
+            <button class="summary-card" id="paymentTrackingBtn" onclick="openPaymentTracking()" style="width:100%;text-align:left;cursor:pointer;border:none;">
                 <div class="summary-card-accent"></div>
-                <!-- Top: This Report -->
-                <div class="summary-top">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px 12px 22px;">
+                    <!-- Left: This Report -->
                     <div>
-                        <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:4px;">This Report</div>
-                        <div id="totalAmount" style="font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:600;color:var(--amber-lt);letter-spacing:-0.5px;">$0.00</div>
+                        <div style="font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);">This Report</div>
+                        <div id="totalAmount" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--amber-lt);letter-spacing:-0.5px;">$0.00</div>
                     </div>
-                    <div style="font-size:30px;opacity:0.1;">💰</div>
+                    <!-- Center divider -->
+                    <div style="width:1px;height:36px;background:rgba(255,255,255,0.1);margin:0 16px;flex-shrink:0;"></div>
+                    <!-- Right: Total Due -->
+                    <div style="flex:1;">
+                        <div style="font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);">Total Expenses Due</div>
+                        <span id="paymentTrackingAmount" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600;color:var(--amber-lt);">$0.00 Owed</span>
+                    </div>
+                    <span style="color:rgba(255,255,255,0.25);font-size:18px;flex-shrink:0;">›</span>
                 </div>
-                <div class="summary-divider"></div>
-                <!-- Bottom: Total Owed — tap to open payment tracking -->
-                <button class="summary-bottom" id="paymentTrackingBtn" onclick="openPaymentTracking()">
-                    <div>
-                        <div style="font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-bottom:3px;">Total Expenses Due</div>
-                        <span id="paymentTrackingAmount" style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--amber-lt);">$0.00 Owed</span>
-                        <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-top:3px;letter-spacing:0.3px;">Tap to track payments ›</div>
-                    </div>
-                </button>
-            </div>
+            </button>
 
             <!-- Advances -->
-            <div class="card">
-                <div class="card-title"><span class="card-icon">💵</span> Advances</div>
+            <div class="card" style="padding:12px 16px 14px;">
+                <div class="card-title" style="margin-bottom:10px;"><span class="card-icon">💵</span> Advances</div>
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Cash Advance ($)</label>
@@ -852,10 +920,11 @@
                 </div>
             </div>
 
-            <!-- Actions -->
-            <div class="button-group">
-                <button class="btn btn-success" onclick="generatePDF()" style="grid-column:1/-1;">
-                    <svg width="16" height="20" viewBox="0 0 26 30" fill="none" style="flex-shrink:0;">
+            <!-- Actions: 2 rows × 2 cols, then Email full-width -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                <button class="btn btn-primary" onclick="exportToFile()">💾 Save</button>
+                <button class="btn btn-success" onclick="generatePDF()" style="gap:5px;">
+                    <svg width="14" height="17" viewBox="0 0 26 30" fill="none" style="flex-shrink:0;">
                         <rect x="1" y="1" width="18" height="24" rx="2" fill="white" stroke="#c0392b" stroke-width="1.5"/>
                         <path d="M5 1v5a1 1 0 001 1h5" stroke="#c0392b" stroke-width="1.5" fill="none"/>
                         <rect x="0" y="15" width="26" height="10" rx="2" fill="#c0392b"/>
@@ -863,10 +932,9 @@
                     </svg>
                     Export PDF
                 </button>
-                <button class="btn btn-primary" onclick="exportToFile()">💾 Save</button>
                 <button class="btn btn-primary" onclick="openLoadReportModal()">📂 Load</button>
                 <button class="btn btn-secondary" onclick="clearForm()">🔄 Clear</button>
-                <button class="btn btn-secondary" onclick="openEmailModal()" style="grid-column:1/-1; border-color:var(--blue); color:var(--blue);">
+                <button class="btn btn-secondary" onclick="openEmailModal()" style="grid-column:1/-1;border-color:var(--blue);color:var(--blue);">
                     ✉️ Email Reports…
                 </button>
             </div>
@@ -3043,17 +3111,58 @@
                 const paidLabel = report.paid ? ' · ✓ Paid' : '';
                 html += `
                     <div class="email-report-item${hasPdf ? '' : ' no-pdf'}" id="email-item-${idx}"
-                         onclick="${hasPdf ? `toggleEmailItem(${idx})` : "showDialog('No PDF','This report\\'s PDF was not stored in this browser session. Re-export the PDF first.')"}">
+                         onclick="${hasPdf ? `toggleEmailItem(${idx})` : `promptPickPdfForReport(${idx})`}">
                         <div class="email-check" id="email-check-${idx}"></div>
                         <div class="email-report-info">
                             <div class="email-report-name">${report.companyName}</div>
                             <div class="email-report-meta">#${report.reportNumber} · ${report.date} · ${report.amount}${paidLabel}</div>
                         </div>
-                        <span class="email-pdf-badge ${hasPdf ? 'ready' : 'missing'}">${hasPdf ? 'PDF ✓' : 'No PDF'}</span>
+                        <span class="email-pdf-badge ${hasPdf ? 'ready' : 'missing'}" id="email-badge-${idx}">${hasPdf ? 'PDF ✓' : '📂 Pick PDF'}</span>
                     </div>`;
             });
             listEl.innerHTML = html;
             updateEmailSelCount();
+        }
+
+        function promptPickPdfForReport(idx) {
+            const report = submittedReports[idx];
+            if (!report) return;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf,application/pdf';
+            input.onchange = async function() {
+                const file = input.files && input.files[0];
+                if (!file) return;
+
+                // Show loading state
+                const badge = document.getElementById('email-badge-' + idx);
+                if (badge) badge.textContent = '⏳';
+
+                try {
+                    const arrayBuf = await file.arrayBuffer();
+                    const blob = new Blob([arrayBuf], { type: 'application/pdf' });
+                    await idbPut('pdf_' + report.reportNumber, blob);
+
+                    // Mark as available and select automatically
+                    emailPdfAvailability[report.reportNumber] = true;
+                    const item  = document.getElementById('email-item-' + idx);
+                    const check = document.getElementById('email-check-' + idx);
+                    if (item) {
+                        item.classList.remove('no-pdf');
+                        item.onclick = function() { toggleEmailItem(idx); };
+                        item.classList.add('selected');
+                    }
+                    if (check) check.textContent = '✓';
+                    if (badge) { badge.textContent = 'PDF ✓'; badge.className = 'email-pdf-badge ready'; }
+                    updateEmailSelCount();
+                } catch(e) {
+                    const badge2 = document.getElementById('email-badge-' + idx);
+                    if (badge2) { badge2.textContent = '📂 Pick PDF'; badge2.className = 'email-pdf-badge missing'; }
+                    showDialog('Error', 'Could not load PDF: ' + e.message);
+                }
+            };
+            input.click();
         }
 
         function toggleEmailItem(idx) {
@@ -3446,64 +3555,91 @@
             let totalOwed = 0;
             let html = '';
 
-            // Show newest first (already sorted)
             submittedReports.forEach((report, index) => {
                 const paidClass = report.paid ? 'paid' : '';
                 const amount = parseFloat(report.amount.replace('$', '').replace(',', '')) || 0;
-                
-                if (!report.paid) {
-                    totalOwed += amount;
-                }
+                if (!report.paid) totalOwed += amount;
 
-                const hasPdf = report.hasPdfFile ? 'has-pdf' : '';
-                const checkStyle = report.paid
-                    ? 'background:#28a745; color:white; border-color:#28a745;'
-                    : 'background:white; color:#ccc; border-color:#ccc;';
-                const fileBtnStyle = report.hasPdfFile ? 'color:#c0392b;' : 'opacity:0.3;';
-                const loadBtnStyle = report.hasFile ? '' : 'opacity:0.3;';
+                const paidBtnStyle = report.paid
+                    ? 'color:var(--green);'
+                    : 'color:var(--ash);';
+                const paidLabel = report.paid ? '✓ Paid' : 'Paid?';
+                const fileDim  = report.hasPdfFile ? '' : 'opacity:0.3;';
+                const loadDim  = report.hasFile    ? '' : 'opacity:0.3;';
 
                 html += `
-                    <div class="payment-item ${paidClass} ${hasPdf}" style="display:flex; align-items:stretch; padding:0;">
-                        <div style="flex:1; min-width:0; padding:12px 14px; overflow:hidden;">
-                            <div class="payment-customer-name">${report.companyName}</div>
-                            <div style="display:flex; gap:8px; align-items:center; margin-top:4px; flex-wrap:nowrap;">
-                                <span class="payment-date">${report.date}</span>
-                                <span class="payment-report-num">#${report.reportNumber}</span>
-                                <span class="payment-amount">${report.amount}</span>
+                    <div class="payment-item ${paidClass}" id="pi-${index}" onclick="togglePaymentItem(${index})">
+                        <div class="payment-item-track">
+                            <div class="payment-item-text">
+                                <div class="pi-name">${report.companyName}</div>
+                                <div class="pi-meta">
+                                    <span class="payment-date">${report.date}</span>
+                                    <span class="payment-report-num">#${report.reportNumber}</span>
+                                    <span class="payment-amount">${report.amount}</span>
+                                </div>
+                            </div>
+                            <div class="payment-item-btns">
+                                <button class="payment-action-btn" style="${fileDim}"
+                                    onclick="paymentBtnClick(event,${index},()=>openReportPDF(${index}))">
+                                    <svg width="18" height="22" viewBox="0 0 26 30" fill="none">
+                                        <rect x="1" y="1" width="18" height="24" rx="2" fill="white" stroke="#c0392b" stroke-width="1.5"/>
+                                        <path d="M5 1v5a1 1 0 001 1h5" stroke="#c0392b" stroke-width="1.5" fill="none"/>
+                                        <rect x="0" y="15" width="26" height="10" rx="2" fill="#c0392b"/>
+                                        <text x="13" y="23.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="7.5" font-weight="bold" fill="white">PDF</text>
+                                    </svg>
+                                    PDF
+                                </button>
+                                <button class="payment-action-btn" style="${loadDim}"
+                                    onclick="paymentBtnClick(event,${index},()=>loadReportFromTracking(${index}))">
+                                    <svg width="18" height="22" viewBox="0 0 26 30" fill="none">
+                                        <rect x="1" y="5" width="24" height="20" rx="2" fill="white" stroke="#2563eb" stroke-width="1.5"/>
+                                        <path d="M1 11h24" stroke="#2563eb" stroke-width="1.5"/>
+                                        <path d="M5 5V3a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#2563eb" stroke-width="1.5" fill="none"/>
+                                        <path d="M13 18l-4-4m0 0l4-4m-4 4h8" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    LOAD
+                                </button>
+                                <button class="payment-action-btn" style="${paidBtnStyle}"
+                                    onclick="paymentBtnClick(event,${index},()=>togglePaymentStatus(${index}))">
+                                    <span style="font-size:17px;">✓</span>
+                                    ${paidLabel}
+                                </button>
+                                <button class="payment-action-btn" style="color:#c0392b;"
+                                    onclick="paymentBtnClick(event,${index},()=>deleteReport(${index}))">
+                                    <span style="font-size:17px;">🗑</span>
+                                    DEL
+                                </button>
                             </div>
                         </div>
-                        <button class="payment-action-btn" onclick="event.stopPropagation(); openReportPDF(${index})" title="View PDF" style="flex-shrink:0;${fileBtnStyle}">
-                            <svg width="22" height="26" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="1" y="1" width="18" height="24" rx="2" fill="white" stroke="#c0392b" stroke-width="1.5"/>
-                                <path d="M5 1v5a1 1 0 001 1h5" stroke="#c0392b" stroke-width="1.5" fill="none"/>
-                                <rect x="0" y="15" width="26" height="10" rx="2" fill="#c0392b"/>
-                                <text x="13" y="23.5" text-anchor="middle" font-family="Arial,sans-serif" font-size="7.5" font-weight="bold" fill="white">PDF</text>
-                            </svg>
-                            <span>PDF</span>
-                        </button>
-                        <button class="payment-action-btn" onclick="event.stopPropagation(); loadReportFromTracking(${index})" title="Load Report" style="flex-shrink:0;${loadBtnStyle}">
-                            <svg width="22" height="26" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="1" y="5" width="24" height="20" rx="2" fill="white" stroke="#2563eb" stroke-width="1.5"/>
-                                <path d="M1 11h24" stroke="#2563eb" stroke-width="1.5"/>
-                                <path d="M5 5V3a1 1 0 011-1h4a1 1 0 011 1v2" stroke="#2563eb" stroke-width="1.5" fill="none"/>
-                                <path d="M13 18l-4-4m0 0l4-4m-4 4h8" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                            <span>LOAD</span>
-                        </button>
-                        <div class="payment-check-btn" onclick="event.stopPropagation(); togglePaymentStatus(${index})" style="flex-shrink:0;">
-                            <div style="width:34px; height:34px; border-radius:50%; border:2px solid; display:flex; align-items:center; justify-content:center; font-size:18px; transition:all 0.2s; ${checkStyle}">
-                                ✓
-                            </div>
-                        </div>
-                        <button class="payment-action-btn" onclick="event.stopPropagation(); deleteReport(${index})" title="Delete Report" style="flex-shrink:0;color:#c0392b;font-size:18px;padding:0 10px;">
-                            🗑
-                        </button>
                     </div>
                 `;
             });
 
             listContainer.innerHTML = html;
             document.getElementById('paymentTotalOwed').textContent = `$${totalOwed.toFixed(2)}`;
+        }
+
+        function togglePaymentItem(index) {
+            const clicked = document.getElementById('pi-' + index);
+            const isOpen  = clicked.classList.contains('open');
+            // Close all
+            document.querySelectorAll('.payment-item.open').forEach(el => el.classList.remove('open'));
+            // Open this one if it wasn't already
+            if (!isOpen) clicked.classList.add('open');
+        }
+
+        // First touch on a button: open the card. Second touch: fire the action.
+        function paymentBtnClick(e, index, action) {
+            e.stopPropagation();
+            const item = document.getElementById('pi-' + index);
+            if (!item.classList.contains('open')) {
+                // First touch — just open
+                document.querySelectorAll('.payment-item.open').forEach(el => el.classList.remove('open'));
+                item.classList.add('open');
+            } else {
+                // Second touch — fire
+                action();
+            }
         }
 
         function togglePaymentStatus(index) {
@@ -3543,10 +3679,10 @@
             });
 
             if (allPaid && submittedReports.length > 0) {
-                button.classList.add('all-paid');
+                button.style.background = 'var(--green)';
                 amountSpan.textContent = '✅ All Paid!';
             } else {
-                button.classList.remove('all-paid');
+                button.style.background = '';
                 amountSpan.textContent = `$${totalOwed.toFixed(2)} Owed`;
             }
         }
