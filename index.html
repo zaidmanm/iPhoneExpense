@@ -67,7 +67,9 @@
                 document.head.appendChild(mLink);
 
                 // ── Service Worker registration ──────────────────────
-                if ('serviceWorker' in navigator) {
+                // Only register on the real GitHub Pages domain — not in preview/iframe environments
+                const isGitHubPages = location.hostname.endsWith('github.io');
+                if ('serviceWorker' in navigator && isGitHubPages) {
                     navigator.serviceWorker.register('./sw.js')
                         .then(reg => {
                             // When a new SW is waiting, reload immediately to apply it
@@ -2927,6 +2929,7 @@
         }
 
         // ── Import JSON backup (merge reports, don't overwrite everything) ─────────
+        function importJsonBackup(input) {
             if (!input.files || !input.files[0]) return;
             const file = input.files[0];
             const reader = new FileReader();
@@ -4331,8 +4334,10 @@
             document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
         }
 
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+            });
         });
 
     </script>
