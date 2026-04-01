@@ -1425,6 +1425,38 @@
             };
         }
 
+        // ── iOS Safari blob-download fix ───────────────────────────────────────────
+        // iOS Safari resets autocomplete="off" inputs when a blob URL is clicked.
+        // We snapshot the critical fields before the click and restore them after.
+        function iosSafeDownload(url, fileName) {
+            // Capture values that iOS likes to wipe
+            const fields = ['companyName', 'machineSerial', 'serviceLocation',
+                            'reportNumber', 'technicianName'];
+            const saved = {};
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) saved[id] = el.value;
+            });
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Restore immediately and again after iOS finishes its reset
+            const restore = () => {
+                fields.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && saved[id] !== undefined) el.value = saved[id];
+                });
+            };
+            restore();
+            setTimeout(restore, 50);
+            setTimeout(restore, 300);
+        }
+
         function saveData() {
             try {
                 const data = {
@@ -2890,16 +2922,11 @@
             const fileName = 'ORICS_Backup_' + new Date().toISOString().split('T')[0] + '.json';
             const blob = new Blob([json], { type: 'application/json' });
             const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href = url; a.download = fileName;
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a);
+            iosSafeDownload(url, fileName);
             URL.revokeObjectURL(url);
         }
 
         // ── Import JSON backup (merge reports, don't overwrite everything) ─────────
-
-        function importJsonBackup(input) {
             if (!input.files || !input.files[0]) return;
             const file = input.files[0];
             const reader = new FileReader();
@@ -3275,10 +3302,7 @@
             // Desktop / fallback: download PDFs + open mailto
             for (const file of files) {
                 const url = URL.createObjectURL(file);
-                const a   = document.createElement('a');
-                a.href = url; a.download = file.name;
-                document.body.appendChild(a); a.click();
-                document.body.removeChild(a);
+                iosSafeDownload(url, file.name);
                 setTimeout(() => URL.revokeObjectURL(url), 2000);
             }
 
@@ -3390,10 +3414,7 @@
             }
             // Fallback: download
             const url = URL.createObjectURL(pdfBlob);
-            const a   = document.createElement('a');
-            a.href = url; a.download = pdfFileName;
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a);
+            iosSafeDownload(url, pdfFileName);
             URL.revokeObjectURL(url);
             markPdfSaved();
         }
@@ -3473,10 +3494,7 @@
             // Fallback: download
             const blob = new Blob([json], { type: 'application/json' });
             const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href = url; a.download = fileName;
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a);
+            iosSafeDownload(url, fileName);
             URL.revokeObjectURL(url);
             markSaved();
             showDialog('Report Downloaded ✓',
