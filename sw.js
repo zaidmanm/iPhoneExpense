@@ -11,7 +11,7 @@
 // The old cache is deleted on activate so users always get fresh code.
 // ──────────────────────────────────────────────────────────────────────────────
 
-const CACHE_VERSION = 'orics-v9';   // ← bump this on every deploy
+const CACHE_VERSION = 'orics-v10';   // ← bump this on every deploy
 
 const APP_SHELL = [
     './index.html',
